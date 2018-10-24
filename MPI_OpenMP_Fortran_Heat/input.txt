@@ -1,0 +1,6 @@
+60				!nx
+60				!ny
+0.2d0			!Stability <=0.25
+0.5d0			!tmax
+0.1d0				!alpha, (Heat transfer coefficient)
+5				!nsnap 	(Number of snapshots)
