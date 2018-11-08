@@ -1,5 +1,6 @@
 /*
 Pointer arithmetic to solve heat equation in periodic domain
+Compile using gcc heat_c.c -lm
 */
 #include <stdlib.h>
 #include <stdio.h>
