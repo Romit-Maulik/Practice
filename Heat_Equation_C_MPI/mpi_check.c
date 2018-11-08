@@ -1,3 +1,10 @@
+/*
+Compile using mpicc mpi_check.c -lm
+Run using mpirun -np (numprocs) ./a.out
+Author: Romit Maulik Email: romit.maulik@okstate.edu
+*/
+
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <mpi.h>
