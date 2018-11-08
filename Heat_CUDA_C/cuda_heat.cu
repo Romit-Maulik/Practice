@@ -1,3 +1,8 @@
+/*
+Compile using nvcc cuda_heat.cu
+Author: Romit Maulik - romit.maulik@okstate.edu
+*/
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
