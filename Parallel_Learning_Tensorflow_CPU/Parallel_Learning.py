@@ -1,4 +1,5 @@
-#mpiexec -n 4 python Parallel_Learning.py
+# run using: 'mpiexec -n 4 python Parallel_Learning.py' at command line
+# Dependencies tensorflow=1.12.0, keras=2.2.4, mpi4py, numpy=1.14.3, python=3.6.8
 import numpy as np
 import matplotlib.pyplot as plt
 
