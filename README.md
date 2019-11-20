@@ -1,2 +1,2 @@
 # Tutorials-Demos-Practice
-Basically messing around with simple PDE systems for profiling etc.
+Basically messing around with toy problems in PDEs, HPC, ML
