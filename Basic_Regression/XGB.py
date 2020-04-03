@@ -1,13 +1,13 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.preprocessing import MinMaxScaler, StandardScaler
-from sklearn.multioutput import MultiOutputRegressor
 from xgboost import XGBRegressor
 import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_absolute_error
 from sklearn.pipeline import Pipeline
 from scipy.stats import mode
+import shap
 
 import sys
 np.set_printoptions(threshold=sys.maxsize)
@@ -15,18 +15,23 @@ np.random.seed(10)
 
 
 class XGB_Class():
-    def __init__(self, trainFilename, resultsDir):
+    def __init__(self, trainFilename, resultsDir, variable_names, fold_num):
         # assert len(trainFilenames) == len(testFilenames)
         self.resultsDir = resultsDir
         #ntrees = 1000
         self.trainFilename = trainFilename
+        self.variable_names = variable_names
+        self.fold_num = fold_num
 
         self.load_data()
         self.preprocess_data()
-        self.model = MultiOutputRegressor(XGBRegressor())
+        self.model = XGBRegressor()
 
         # Fit model
         self.model.fit(self.train_X_p,self.train_y_p)
+
+        # Get directions of variable importance
+        self.variable_directions()
 
     def load_data(self):
         filename = self.trainFilename
@@ -46,7 +51,7 @@ class XGB_Class():
         self.train_y_p = self.preproc_y.fit_transform(self.train_y)#.as_matrix()
 
     def importances_rankings(self):
-        importances = self.model.estimators_[0].feature_importances_
+        importances = self.model.feature_importances_
         # Tracking ranking
         indices = np.argsort(importances)[::-1]
         rankings = np.zeros(shape=(self.train_X_p.shape[1],),dtype='int')
@@ -54,6 +59,21 @@ class XGB_Class():
             rankings[int(indices[f])] = f+1
 
         return importances, rankings
+
+    def variable_directions(self):
+        # explain the model's predictions using SHAP
+        # (same syntax works for LightGBM, CatBoost, scikit-learn and spark models)
+        explainer = shap.TreeExplainer(self.model)
+
+        # Make pandas dataframe for visualization
+        temp_dataframe = pd.DataFrame(data=self.train_X_p,columns=self.variable_names)
+        shap_values = explainer.shap_values(self.train_X_p)
+        shap.save_html('importances/force_plots/Fold_'+str(self.fold_num)+'_force_plot.html',shap.force_plot(explainer.expected_value, shap_values, temp_dataframe))
+
+        shap.summary_plot(shap_values, temp_dataframe,show=False)
+        plt.savefig('importances/summary_plots/Fold_'+str(self.fold_num)+'_summary_plot.png')
+        plt.clf()
+
 
 def plot_ensemble_rankings(importance_tracker, ranking_tracker, variable_names, num_folds):
 
@@ -132,11 +152,14 @@ if __name__ == '__main__':
     # Record list of variables
     variable_names = csv_df.columns.tolist()[:-1]
 
-    import os, glob
+    import os
+    import glob
     if not os.path.exists('importances/'):
         os.mkdir('importances/')
+        os.mkdir('importances/force_plots/')
+        os.mkdir('importances/summary_plots/')
     resultsDir = 'importances/'
-    
+
     trainFilenames = []
     testFilenames = []
     pattern = 'folds/train_*.csv'
@@ -146,13 +169,15 @@ if __name__ == '__main__':
     importance_tracker = []
     ranking_tracker = []
 
+    fold_num = 0
     for trainFilename in trainFiles:
         trainFilenames.append(trainFilename)
-        xgb_temp = XGB_Class(trainFilename, resultsDir)
+        xgb_temp = XGB_Class(trainFilename, resultsDir, variable_names, fold_num)
         importance, ranking = xgb_temp.importances_rankings()
 
         importance_tracker.append(importance)
         ranking_tracker.append(ranking)
+        fold_num = fold_num + 1
 
     importance_tracker = np.asarray(importance_tracker)
     ranking_tracker = np.asarray(ranking_tracker)

@@ -60,6 +60,7 @@ if show_box_plots:
         plt.yticks(fontsize=20)
         plt.tight_layout()
         plt.savefig('metrics/'+metric_list[metric]+'.png')
+        plt.clf()
 
 # Write out average and std of metric_matrix
 metric_means = np.zeros(shape=(num_metrics,num_methods-1))
