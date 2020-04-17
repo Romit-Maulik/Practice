@@ -17,6 +17,7 @@ if __name__ == '__main__':
 
     # Read data file 
     csv_df = pd.read_csv(args.csv_file,encoding = "ISO-8859-1")
+    csv_df = csv_df.apply(pd.to_numeric, errors='coerce') # Non-numeric values converted to NaN
     csv_df = csv_df.fillna(0.0)
     data = np.asarray(csv_df.values.tolist())
 
