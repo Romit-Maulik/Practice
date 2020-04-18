@@ -2,6 +2,7 @@ import numpy as np
 np.random.seed(5)
 import matplotlib.pyplot as plt
 import argparse
+from run_regressors import Regression
 
 parser = argparse.ArgumentParser(description='Parse results for all folds')
 parser.add_argument('num_folds', metavar='num_folds', type=str, help='csv data file path')
@@ -12,10 +13,12 @@ import os
 if not os.path.exists('metrics/'):
     os.mkdir('metrics/')
 
-key_list = ['lm','rg','svm','gp','knn','dt','br','etr','rfr','abr','gbr','xgb','dl']
+reg_class = Regression(None,None,None,run_case=False)
+key_list = list(reg_class.regressors.keys())
+
 metric_list = ['r2','rho','evs','mae','rmse']
 num_methods = len(key_list)
-num_metrics = 5
+num_metrics = len(metric_list)
 
 metric_matrix = np.zeros(shape=(int(args.num_folds),num_methods,num_metrics))
 
