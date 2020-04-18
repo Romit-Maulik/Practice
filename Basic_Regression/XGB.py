@@ -74,7 +74,6 @@ class XGB_Class():
         shap.summary_plot(shap_values, temp_dataframe,show=False)
         plt.tight_layout()
         plt.savefig('importances/summary_plots/Fold_'+str(self.fold_num)+'_summary_plot.png',bbox_inches='tight')
-        plt.show()
         plt.clf()
 
 
