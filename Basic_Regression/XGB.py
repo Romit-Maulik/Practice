@@ -70,8 +70,11 @@ class XGB_Class():
         shap_values = explainer.shap_values(self.train_X_p)
         shap.save_html('importances/force_plots/Fold_'+str(self.fold_num)+'_force_plot.html',shap.force_plot(explainer.expected_value, shap_values, temp_dataframe))
 
+        plt.figure()
         shap.summary_plot(shap_values, temp_dataframe,show=False)
-        plt.savefig('importances/summary_plots/Fold_'+str(self.fold_num)+'_summary_plot.png')
+        plt.tight_layout()
+        plt.savefig('importances/summary_plots/Fold_'+str(self.fold_num)+'_summary_plot.png',bbox_inches='tight')
+        plt.show()
         plt.clf()
 
 
