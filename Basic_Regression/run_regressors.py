@@ -77,7 +77,7 @@ LOG_FLAG = False
 
 class Regression():
 
-    def __init__(self, trainFilename, testFilename, resultsDir):
+    def __init__(self, trainFilename, testFilename, resultsDir, run_case=True):
         # assert len(trainFilenames) == len(testFilenames)
         self.resultsDir = resultsDir
         #ntrees = 1000
