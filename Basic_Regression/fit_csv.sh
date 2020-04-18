@@ -29,7 +29,7 @@ else
         python make_folds.py $1 $2
         python run_regressors.py
         python parse_results.py $2
-        python XGB.py $1 $2
+        python RFR.py $1 $2
         
         exit 0
     else
@@ -37,4 +37,3 @@ else
         exit 1
     fi
 fi
-
