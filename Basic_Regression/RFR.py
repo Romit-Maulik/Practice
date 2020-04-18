@@ -61,7 +61,7 @@ class RFR_Class():
             m = r2_score(self.model.predict(temp_df), self.train_y_p)
             temp_df[col] = save
             imp.append(baseline - m)
-        return np.array(imp)
+        return np.array(imp)/np.sum(np.array(imp))
 
     def importances_rankings(self):
 
