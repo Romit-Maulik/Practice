@@ -6,7 +6,7 @@ atari-py==0.2.6
 attrs==19.2.0
 backcall==0.1.0
 beautifulsoup4==4.9.0
-bleach==3.1.0
+bleach==3.1.4
 bokeh==1.4.0
 box2d-py==2.3.8
 cachetools==4.0.0
