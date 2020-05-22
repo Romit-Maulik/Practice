@@ -66,14 +66,17 @@ if show_box_plots:
         plt.clf()
 
 # Write out average and std of metric_matrix
-metric_means = np.zeros(shape=(num_metrics,num_methods-1))
-metric_stds = np.zeros(shape=(num_metrics,num_methods-1))
+metric_means = np.zeros(shape=(num_metrics,num_methods))
+metric_stds = np.zeros(shape=(num_metrics,num_methods))
 
 for metric in range(num_metrics):
-    for method in range(num_methods-1):
+    for method in range(num_methods):
         metric_means[metric,method] = np.mean(metric_matrix[:,method,metric],axis=0)
         metric_stds[metric,method] = np.std(metric_matrix[:,method,metric],axis=0)
 
 # Save metric matrices
-np.savetxt('metrics/Metric_Means.csv',metric_means,fmt='%1.2e',delimiter=',')
-np.savetxt('metrics/Metric_stds.csv',metric_stds,fmt='%1.2e',delimiter=',')
+import pandas as pd
+mean_df = pd.DataFrame(metric_means,columns=key_list,index=metric_list)
+std_df = pd.DataFrame(metric_stds,columns=key_list,index=metric_list)
+mean_df.to_csv('metrics/Metric_Means.csv')
+std_df.to_csv('metrics/Metric_stds.csv')
