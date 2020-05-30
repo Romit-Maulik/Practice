@@ -22,5 +22,4 @@ In addition, we may also train an RL agent to explore the search space of soluti
 `python nn_opt.py rl_optimize augmented`
 
 ## Work in progress
-1. Adding constrained optimizers
-2. Improving Bernstein polynomial representation (potentially bug in shape plotting)
+1. Improving RL
