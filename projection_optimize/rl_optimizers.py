@@ -91,11 +91,12 @@ class rl_optimize():
         f.close()
 
     def optimize_shape(self):
-        action = np.random.uniform(size=(self.action_shape))
+        # action = np.random.uniform(size=(self.action_shape))
+        action = np.asarray([0.1268, 0.467, 0.5834, 0.2103, -0.1268, -0.5425, -0.5096, 0.0581])
 
         self.path = []
         self.obs_path = []
-        for _ in range(10):
+        for _ in range(30):
             obs = self.model.predict(action.reshape(1,self.action_shape))[0,:]
             action = self.trainer.compute_action(obs)
 

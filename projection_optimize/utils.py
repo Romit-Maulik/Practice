@@ -40,11 +40,27 @@ def shape_return(a,pnum):
         S_down = S_down + a[N+i]*(xi**i)*(x1 - xi)**(N-i)
 
     plt.figure()
-    plt.plot(xi,c_vec*S_up,color='blue')
-    plt.plot(np.flip(xi),np.flip(c_vec*S_down),color='blue')
-    plt.ylim((-0.5,0.5))
+    plt.plot(np.flip(xi),np.flip(c_vec*S_up),color='blue')
+    plt.plot(xi,c_vec*S_down,color='blue')
+    plt.ylim((-1.0,1.0))
     plt.savefig('Shapes/Shape_'+str(pnum)+'.jpeg')
     plt.close()
 
 if __name__ == '__main__':
-    pass
+    print('Checking plotting of airfoil')
+    t_base = np.asarray([0.1268, 0.467, 0.5834, 0.2103, -0.1268, -0.5425, -0.5096, 0.0581])
+    t_lower = np.asarray([-0.08876, -0.3269, -0.40838, -0.14721, 0.1648, 0.70525, 0.66248, -0.04067])
+    t_upper = np.asarray([0.1648, 0.6071, 0.75842, 0.27339, -0.08876, -0.37975, -0.35672, 0.07553])
+
+    # Lower bound
+    pnum = 'lower'
+    shape_return(t_lower,pnum)
+
+    # Base
+    pnum = 'base'
+    shape_return(t_base,pnum)
+
+    # Upper bound
+    pnum = 'upper'
+    shape_return(t_upper,pnum)
+

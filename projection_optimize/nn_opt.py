@@ -3,7 +3,7 @@ import tensorflow as tf
 tf.random.set_seed(10)
 
 import numpy as np
-np.random.seed(10)
+np.random.seed(100)
 import matplotlib.pyplot as plt
 
 from surrogate_models import coefficient_model, coefficient_model_adjoint
@@ -27,6 +27,7 @@ if __name__ == '__main__':
     adjoint_data = np.zeros(shape=(170,8)).astype('float32') # placeholder
     field_data = np.load('pressure_data.npy').astype('float32')
 
+
     # Define a simple fully connected model
     if args.adjoint_mode == 'augmented':
         model=coefficient_model_adjoint(input_data,output_data,adjoint_data)
@@ -41,20 +42,12 @@ if __name__ == '__main__':
 
     if args.mode == 'optimize':
         # gradient-based Perform optimization
-        '''
-        Define constraints (depends on your problem)
-        https://stackoverflow.com/questions/42303470/scipy-optimize-inequality-constraint-which-side-of-the-inequality-is-considere
-        ''' 
-        def con_1(t):
-            return t[0]-0.1
-        def con_2(t):
-            return t[1]-0.1
-        cons = ({'type':'ineq', 'fun': con_1},{'type':'ineq', 'fun': con_2})
+        from constraints import cons
 
         # Initialize optimizer
         num_pars = np.shape(input_data)[1]
         opt = surrogate_optimizer(model,num_pars,cons)
-        best_func_val, solution, best_opt = opt.optimize(10) # Optimize with 10 restarts
+        best_func_val, solution, best_opt = opt.optimize(20) # Optimize with 10 restarts
         
         # Visualize airfoil shape evolution
         for i in range(1,np.shape(best_opt)[0]):
@@ -83,7 +76,7 @@ if __name__ == '__main__':
         env_params['init_guess'] = np.random.uniform(size=(np.shape(input_data)[1]))
         env_params['model_type'] = 'regular'
 
-        rl_opt = rl_optimize(env_params,args.adjoint_mode,10) # 10 iteration optimization
+        rl_opt = rl_optimize(env_params,args.adjoint_mode,20) # 10 iteration optimization
 
         f = open('rl_checkpoint','r')
         checkpoint_path = f.readline()

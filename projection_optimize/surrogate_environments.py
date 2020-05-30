@@ -5,6 +5,7 @@ import numpy as np
 np.random.seed(10)
 from gym import spaces
 from surrogate_models import coefficient_model, coefficient_model_adjoint
+from constraints import t_lower, t_upper
 
 """
 State:
@@ -38,16 +39,16 @@ class airfoil_surrogate_environment(gym.Env):
         print('Observation parameter dimension : ', self.num_obs)
 
 
-        lbo = -10.0*np.ones(shape=2)
-        ubo = 10*np.ones(shape=2)
+        lbo = -1+np.zeros(shape=2)
+        ubo = 1+np.ones(shape=2)
         self.observation_space = spaces.Box(low=lbo,high=ubo,dtype='double')
 
-        lba = -10.0*np.ones(shape=8)
-        uba = 10*np.ones(shape=8)
+        lba = np.asarray(t_lower)
+        uba = np.asarray(t_upper)
         self.action_space = spaces.Box(low=lba,high=uba,dtype='double')
 
         # initialization
-        self.max_iters = 100
+        self.max_iters = 5
         self.start_coeffs = self.model.predict(self.init_guess.reshape(1,self.num_params))[0,:] # This is the initial observation
         self.coeffs = self.start_coeffs
        
@@ -72,16 +73,16 @@ class airfoil_surrogate_environment(gym.Env):
         # Need to use surrogate model (NN based) to calculate coefficients
         input_var = self.shape_vec.reshape(1,self.num_params)        
         obs =  self.model.predict(input_var)[0,:]
-        pred = self.model.predict(input_var)[0,0]
+        pred = self.model.predict(input_var)[0,0]**2 + (self.model.predict(input_var)[0,1]-0.3)**2
 
         self.coeffs = obs
         self.coeffs_path.append(obs)
       
         if self.iter < self.max_iters:
-            reward = 1.0-(pred)**2
+            reward = -pred
             done = False
         else:
-            reward = 1.0-(pred)**2
+            reward = -pred
             done = True
         
         return obs, reward, done , {}

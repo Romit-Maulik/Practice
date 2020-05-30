@@ -81,11 +81,12 @@ class coefficient_model(Model):
                 output_batch = self.output_data_train[batch*20:(batch+1)*20]
                 self.network_learn(input_batch,output_batch)
 
-                print('Test loss:',self.get_loss(self.input_data_test,self.output_data_test).numpy())
+                
 
             # Check accuracy
             if r2_iter == 10:
                 predictions = self.call(self.input_data_test)
+                print('Test loss:',self.get_loss(self.input_data_test,self.output_data_test).numpy())
                 print('Test loss:',self.get_loss(self.input_data_test,self.output_data_test))
                 r2 = coeff_determination(predictions,self.output_data_test)
                 print('Test R2:',r2)
@@ -164,13 +165,13 @@ class coefficient_model_adjoint(Model):
     def get_grad(self,X,Y,A):
         with tf.GradientTape() as tape:
             tape.watch(self.trainable_variables)
-            L = self.get_augmented_loss(X,Y,A)
+            L = self.get_loss(X,Y,A)
             g = tape.gradient(L, self.trainable_variables)
         return g
 
     # perform gradient descent - adjoint enhanced
     def network_learn(self,X,Y,A):
-        g = self.get_augmented_grad(X,Y,A)
+        g = self.get_grad(X,Y,A)
         self.train_op.apply_gradients(zip(g, self.trainable_variables))
 
     # Train the model
