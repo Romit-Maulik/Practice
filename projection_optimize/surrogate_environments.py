@@ -45,11 +45,15 @@ class airfoil_surrogate_environment(gym.Env):
 
         lba = np.asarray(t_lower)
         uba = np.asarray(t_upper)
+
         self.action_space = spaces.Box(low=lba,high=uba,dtype='double')
 
         # initialization
-        self.max_iters = 5
-        self.start_coeffs = self.model.predict(self.init_guess.reshape(1,self.num_params))[0,:] # This is the initial observation
+        self.max_steps = env_params['num_steps']
+        self.start_coeffs = self.model.op_scaler.inverse_transform(\
+                            self.model.predict(\
+                            self.init_guess.reshape(1,self.num_params)))[0,:] # This is the initial observation
+
         self.coeffs = self.start_coeffs
        
     def reset(self):
@@ -72,14 +76,18 @@ class airfoil_surrogate_environment(gym.Env):
        
         # Need to use surrogate model (NN based) to calculate coefficients
         input_var = self.shape_vec.reshape(1,self.num_params)        
-        obs =  self.model.predict(input_var)[0,:]
-        pred = self.model.predict(input_var)[0,0]**2 + (self.model.predict(input_var)[0,1]-0.3)**2
+        
+        # pred = self.model.predict(input_var)[0,0]**2# + (self.model.predict(input_var)[0,1]-0.3)**2
+
+        obs = self.model.predict(input_var)
+        obs = self.model.op_scaler.inverse_transform(obs)[0,:]
+        pred = 0.5*(obs[0]**2)
 
         self.coeffs = obs
         self.coeffs_path.append(obs)
       
-        if self.iter < self.max_iters:
-            reward = -pred
+        if self.iter < self.max_steps:
+            reward = 0.0
             done = False
         else:
             reward = -pred
@@ -98,6 +106,7 @@ if __name__ == '__main__':
     env_params['num_obs'] = 2
     env_params['init_guess'] = np.random.uniform(size=(8))
     env_params['model_type'] = 'regular'
+    env_params['num_steps'] = 5
 
     check = airfoil_surrogate_environment(env_params)
     check.reset()

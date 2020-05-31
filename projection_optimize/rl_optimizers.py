@@ -43,7 +43,7 @@ class CustomModel(TFModelV2):
 
 
 class rl_optimize():
-    def __init__(self,env_params,model_args,num_iters=10):
+    def __init__(self,env_params,model_args,num_iters,num_steps):
         # Load dataset
         input_data = np.load(dir_path+'/doe_data.npy').astype('float32')
         output_data = np.load(dir_path+'/coeff_data.npy').astype('float32')
@@ -59,7 +59,7 @@ class rl_optimize():
 
         ray.init()
 
-        ModelCatalog.register_custom_model("my_model", CustomModel)
+        # ModelCatalog.register_custom_model("my_model", CustomModel)
 
         config = ppo.DEFAULT_CONFIG.copy()
         config["num_gpus"] = 0
@@ -69,11 +69,12 @@ class rl_optimize():
 
         # Add custom model for policy
         model={}
-        model["custom_model"] = "my_model"
+        # model["custom_model"] = "my_model"
         config["model"] = model
 
         self.trainer = ppo.PPOTrainer(config=config, env="Airfoil")
         self.num_iters = num_iters
+        self.num_steps = num_steps
 
     def train(self):
         # Can optionally call trainer.restore(path) to load a checkpoint.
@@ -92,12 +93,14 @@ class rl_optimize():
 
     def optimize_shape(self):
         # action = np.random.uniform(size=(self.action_shape))
-        action = np.asarray([0.1268, 0.467, 0.5834, 0.2103, -0.1268, -0.5425, -0.5096, 0.0581])
+        from constraints import t_base
+        action = np.asarray(t_base)
 
         self.path = []
         self.obs_path = []
-        for _ in range(30):
-            obs = self.model.predict(action.reshape(1,self.action_shape))[0,:]
+        for _ in range(self.num_steps):
+            obs = self.model.predict(action.reshape(1,self.action_shape))
+            obs = self.model.op_scaler.inverse_transform(obs)[0,:]
             action = self.trainer.compute_action(obs)
 
             self.path.append(action)

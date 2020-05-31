@@ -22,4 +22,4 @@ In addition, we may also train an RL agent to explore the search space of soluti
 `python nn_opt.py rl_optimize augmented`
 
 ## Work in progress
-1. Improving RL
+1. Improving RL 

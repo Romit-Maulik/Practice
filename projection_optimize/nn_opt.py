@@ -27,7 +27,6 @@ if __name__ == '__main__':
     adjoint_data = np.zeros(shape=(170,8)).astype('float32') # placeholder
     field_data = np.load('pressure_data.npy').astype('float32')
 
-
     # Define a simple fully connected model
     if args.adjoint_mode == 'augmented':
         model=coefficient_model_adjoint(input_data,output_data,adjoint_data)
@@ -47,12 +46,12 @@ if __name__ == '__main__':
         # Initialize optimizer
         num_pars = np.shape(input_data)[1]
         opt = surrogate_optimizer(model,num_pars,cons)
-        best_func_val, solution, best_opt = opt.optimize(20) # Optimize with 10 restarts
+        best_func_val, solution, best_opt = opt.optimize(10) # Optimize with 10 restarts
         
         # Visualize airfoil shape evolution
         for i in range(1,np.shape(best_opt)[0]):
             shape_return(best_opt[i],i)
-    
+   
     elif args.mode == 'rl_train':
         from rl_optimizers import rl_optimize
        
@@ -62,8 +61,9 @@ if __name__ == '__main__':
         env_params['num_obs'] = np.shape(output_data)[1]
         env_params['init_guess'] = np.random.uniform(size=(np.shape(input_data)[1]))
         env_params['model_type'] = 'regular'
+        env_params['num_steps'] = 10 # 10 step iteration
 
-        rl_opt = rl_optimize(env_params,args.adjoint_mode,10) # 10 iteration optimization
+        rl_opt = rl_optimize(env_params,args.adjoint_mode,20,10) # 20 iteration optimization, 10 steps
         rl_opt.train()
 
     elif args.mode == 'rl_optimize':
@@ -75,8 +75,9 @@ if __name__ == '__main__':
         env_params['num_obs'] = np.shape(output_data)[1]
         env_params['init_guess'] = np.random.uniform(size=(np.shape(input_data)[1]))
         env_params['model_type'] = 'regular'
+        env_params['num_steps'] = 10
 
-        rl_opt = rl_optimize(env_params,args.adjoint_mode,20) # 10 iteration optimization
+        rl_opt = rl_optimize(env_params,args.adjoint_mode,20,10) # 20 iteration optimization, 10 steps
 
         f = open('rl_checkpoint','r')
         checkpoint_path = f.readline()
@@ -87,3 +88,6 @@ if __name__ == '__main__':
         # Visualize airfoil shape evolution
         for i in range(1,len(path)):
             shape_return(path[i],i)
+
+        # Print best coefficients etc
+        print('Drag and lift coefficients',coeff_path[-1])

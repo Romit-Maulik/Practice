@@ -9,11 +9,16 @@ import numpy as np
 np.random.seed(10)
 
 from utils import coeff_determination
+from sklearn.preprocessing import MinMaxScaler
 
 #Build the model which does basic map of inputs to coefficients
 class coefficient_model(Model):
     def __init__(self,input_data,output_data):
         super(coefficient_model, self).__init__()
+
+        # Scale
+        self.op_scaler = MinMaxScaler()
+        self.op_scaler.fit_transform(output_data)
 
         # Randomize datasets
         idx = np.arange(np.shape(input_data)[0])
@@ -31,14 +36,10 @@ class coefficient_model(Model):
 
         # Define model
         xavier=tf.keras.initializers.GlorotUniform()
-        self.l1=tf.keras.layers.Dense(10,kernel_initializer=xavier,activation=tf.nn.relu,input_shape=[self.ip_shape])
-        self.l2=tf.keras.layers.Dense(25,kernel_initializer=xavier,activation=tf.nn.relu)
-        self.l3=tf.keras.layers.Dense(50,kernel_initializer=xavier,activation=tf.nn.relu)
-        self.l4=tf.keras.layers.Dense(75,kernel_initializer=xavier,activation=tf.nn.relu)
-        self.l5=tf.keras.layers.Dense(50,kernel_initializer=xavier,activation=tf.nn.relu)
-        self.l6=tf.keras.layers.Dense(25,kernel_initializer=xavier,activation=tf.nn.relu)
-        self.l7=tf.keras.layers.Dense(10,kernel_initializer=xavier,activation=tf.nn.relu)
-        self.out=tf.keras.layers.Dense(self.op_shape,kernel_initializer=xavier)
+        self.l1=tf.keras.layers.Dense(20,kernel_initializer=xavier,activation=tf.nn.tanh,input_shape=[self.ip_shape])
+        self.l2=tf.keras.layers.Dense(20,kernel_initializer=xavier,activation=tf.nn.tanh)
+        self.l3=tf.keras.layers.Dense(20,kernel_initializer=xavier,activation=tf.nn.tanh)
+        self.out=tf.keras.layers.Dense(self.op_shape,kernel_initializer=xavier,activation=tf.nn.tanh)
         self.train_op = tf.keras.optimizers.Adam(learning_rate=0.001)
     
     # Running the model
@@ -46,10 +47,6 @@ class coefficient_model(Model):
         boom=self.l1(X)
         boom=self.l2(boom)
         boom=self.l3(boom)
-        boom=self.l4(boom)
-        boom=self.l5(boom)
-        boom=self.l6(boom)
-        boom=self.l7(boom)
         boom=self.out(boom)
         return boom
     
@@ -75,14 +72,13 @@ class coefficient_model(Model):
     def train_model(self):
         plot_iter = 0
         r2_iter = 0
-        for i in range(100):
+        for i in range(200):
             for batch in range(7):
                 input_batch = self.input_data_train[batch*20:(batch+1)*20]
                 output_batch = self.output_data_train[batch*20:(batch+1)*20]
                 self.network_learn(input_batch,output_batch)
 
                 
-
             # Check accuracy
             if r2_iter == 10:
                 predictions = self.call(self.input_data_test)
@@ -107,6 +103,10 @@ class coefficient_model_adjoint(Model):
     def __init__(self,input_data,output_data,adjoint_data):
         super(coefficient_model_adjoint, self).__init__()
 
+        # Scale
+        self.op_scaler = MinMaxScaler()
+        self.op_scaler.fit_transform(output_data)
+
         # Randomize
         idx = np.arange(np.shape(input_data)[0])
         np.random.shuffle(idx)
@@ -124,30 +124,20 @@ class coefficient_model_adjoint(Model):
         self.ip_shape = np.shape(input_data)[1]
         self.op_shape = np.shape(output_data)[1]
 
-        # Model
+        # Define model
         xavier=tf.keras.initializers.GlorotUniform()
-        self.l1=tf.keras.layers.Dense(10,kernel_initializer=xavier,activation=tf.nn.relu,input_shape=[self.ip_shape])
-        self.l2=tf.keras.layers.Dense(25,kernel_initializer=xavier,activation=tf.nn.relu)
-        self.l3=tf.keras.layers.Dense(50,kernel_initializer=xavier,activation=tf.nn.relu)
-        self.l4=tf.keras.layers.Dense(75,kernel_initializer=xavier,activation=tf.nn.relu)
-        self.l5=tf.keras.layers.Dense(50,kernel_initializer=xavier,activation=tf.nn.relu)
-        self.l6=tf.keras.layers.Dense(25,kernel_initializer=xavier,activation=tf.nn.relu)
-        self.l7=tf.keras.layers.Dense(10,kernel_initializer=xavier,activation=tf.nn.relu)
-        self.out=tf.keras.layers.Dense(self.op_shape,kernel_initializer=xavier)
+        self.l1=tf.keras.layers.Dense(20,kernel_initializer=xavier,activation=tf.nn.tanh,input_shape=[self.ip_shape])
+        self.l2=tf.keras.layers.Dense(20,kernel_initializer=xavier,activation=tf.nn.tanh)
+        self.l3=tf.keras.layers.Dense(20,kernel_initializer=xavier,activation=tf.nn.tanh)
+        self.out=tf.keras.layers.Dense(self.op_shape,kernel_initializer=xavier,activation=tf.nn.tanh)
         self.train_op = tf.keras.optimizers.Adam(learning_rate=0.001)
-
+    
     # Running the model
     def call(self,X):
-        
         boom=self.l1(X)
         boom=self.l2(boom)
         boom=self.l3(boom)
-        boom=self.l4(boom)
-        boom=self.l5(boom)
-        boom=self.l6(boom)
-        boom=self.l7(boom)
         boom=self.out(boom)
-        
         return boom
     
     # Adjoint enhanced MSE
@@ -178,7 +168,7 @@ class coefficient_model_adjoint(Model):
     def train_model(self):
         plot_iter = 0
         r2_iter = 0
-        for i in range(100):
+        for i in range(200):
             for batch in range(7):
                 input_batch = self.input_data_train[batch*20:(batch+1)*20]
                 output_batch = self.output_data_train[batch*20:(batch+1)*20]

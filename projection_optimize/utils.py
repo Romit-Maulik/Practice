@@ -39,10 +39,31 @@ def shape_return(a,pnum):
     for i in range(N):
         S_down = S_down + a[N+i]*(xi**i)*(x1 - xi)**(N-i)
 
+    xx = np.concatenate((np.flip(xi),xi))
+    cc = np.concatenate((np.flip(c_vec*S_up),c_vec*S_down))
+
     plt.figure()
-    plt.plot(np.flip(xi),np.flip(c_vec*S_up),color='blue')
-    plt.plot(xi,c_vec*S_down,color='blue')
-    plt.ylim((-1.0,1.0))
+    plt.plot(xx,cc,label='Found')
+    plt.ylim((-0.1,0.1))
+
+    from constraints import t_base
+    
+    t_base = np.asarray(t_base)
+    t_base = t_base.flatten()
+    N = np.shape(t_base)[0]//2
+
+    S_up = 0
+    S_down = 0
+    
+    for i in range(N):
+        S_up = S_up + t_base[i]*(xi**i)*(x1 - xi)**(N-i)
+        
+    for i in range(N):
+        S_down = S_down + t_base[N+i]*(xi**i)*(x1 - xi)**(N-i)
+
+    cc = np.concatenate((np.flip(c_vec*S_up),c_vec*S_down))
+    plt.plot(xx,cc,label='Base')
+    plt.legend()
     plt.savefig('Shapes/Shape_'+str(pnum)+'.jpeg')
     plt.close()
 
