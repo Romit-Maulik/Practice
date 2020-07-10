@@ -45,8 +45,8 @@ class CustomModel(TFModelV2):
 class rl_optimize():
     def __init__(self,env_params,model_args,num_iters,num_steps):
         # Load dataset
-        input_data = np.load(dir_path+'/doe_data.npy').astype('float32')
-        output_data = np.load(dir_path+'/coeff_data.npy').astype('float32')
+        input_data = np.load(dir_path+'/DOE_2000.npy').astype('float32')
+        output_data = np.load(dir_path+'/coeff_data_2000.npy').astype('float32')
         self.action_shape = np.shape(input_data)[1]
         self.obs_shape = np.shape(output_data)[1]
 
@@ -54,7 +54,7 @@ class rl_optimize():
         if model_args == 'regular':
             self.model=coefficient_model(input_data,output_data)
         elif model_args == 'augmented':
-            adjoint_data = np.zeros(shape=(170,8)).astype('float32') # placeholder
+            adjoint_data = np.zeros(shape=(2000,8)).astype('float32') # placeholder
             self.model=coefficient_model_adjoint(input_data,output_data,adjoint_data)
 
         ray.init()

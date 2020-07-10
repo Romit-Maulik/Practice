@@ -23,13 +23,13 @@ class airfoil_surrogate_environment(gym.Env):
         self.init_guess = env_params['init_guess'] # Needs to be shape=(1,self.num_params)
 
         # Load dataset
-        input_data = np.load(dir_path+'/doe_data.npy').astype('float32')
-        output_data = np.load(dir_path+'/coeff_data.npy').astype('float32')
+        input_data = np.load(dir_path+'/DOE_2000.npy').astype('float32')
+        output_data = np.load(dir_path+'/coeff_data_2000.npy').astype('float32')
 
         if env_params['model_type'] == 'regular':
             self.model = coefficient_model(input_data,output_data)
         elif env_params['model_type'] == 'augmented':
-            adjoint_data = np.zeros(shape=(170,8)).astype('float32') # placeholder
+            adjoint_data = np.zeros(shape=(2000,8)).astype('float32') # placeholder
             self.model = coefficient_model_adjoint(input_data,output_data,adjoint_data)
 
         # Restore model for use in RL
@@ -104,7 +104,7 @@ if __name__ == '__main__':
     env_params = {}
     env_params['num_params'] = 8
     env_params['num_obs'] = 2
-    env_params['init_guess'] = np.random.uniform(size=(8))
+    env_params['init_guess'] = np.random.uniform(size=(27))
     env_params['model_type'] = 'regular'
     env_params['num_steps'] = 5
 

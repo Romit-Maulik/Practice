@@ -9,7 +9,7 @@ import numpy as np
 np.random.seed(10)
 
 from utils import coeff_determination
-from sklearn.preprocessing import MinMaxScaler
+from sklearn.preprocessing import MinMaxScaler, StandardScaler
 
 #Build the model which does basic map of inputs to coefficients
 class coefficient_model(Model):
@@ -17,6 +17,7 @@ class coefficient_model(Model):
         super(coefficient_model, self).__init__()
 
         # Scale
+        # self.op_scaler = StandardScaler()
         self.op_scaler = MinMaxScaler()
         self.op_scaler.fit_transform(output_data)
 
@@ -25,21 +26,24 @@ class coefficient_model(Model):
         np.random.shuffle(idx)
 
         # Segregate
-        self.input_data_train = input_data[idx[:140]]
-        self.output_data_train = output_data[idx[:140]]
+        self.input_data_train = input_data[idx[:50]]
+        self.output_data_train = output_data[idx[:50]]
 
-        self.input_data_test = input_data[idx[140:]]
-        self.output_data_test = output_data[idx[140:]]
+        self.input_data_valid = input_data[idx[50:100]]
+        self.output_data_valid = output_data[idx[50:100]]
+
+        self.input_data_test = input_data[idx[100:]]
+        self.output_data_test = output_data[idx[100:]]
 
         self.ip_shape = np.shape(input_data)[1]
         self.op_shape = np.shape(output_data)[1]
 
         # Define model
         xavier=tf.keras.initializers.GlorotUniform()
-        self.l1=tf.keras.layers.Dense(20,kernel_initializer=xavier,activation=tf.nn.tanh,input_shape=[self.ip_shape])
-        self.l2=tf.keras.layers.Dense(20,kernel_initializer=xavier,activation=tf.nn.tanh)
-        self.l3=tf.keras.layers.Dense(20,kernel_initializer=xavier,activation=tf.nn.tanh)
-        self.out=tf.keras.layers.Dense(self.op_shape,kernel_initializer=xavier,activation=tf.nn.tanh)
+        self.l1=tf.keras.layers.Dense(100,kernel_initializer=xavier,activation=tf.nn.relu,input_shape=[self.ip_shape])
+        self.l2=tf.keras.layers.Dense(100,kernel_initializer=xavier,activation=tf.nn.relu)
+        self.l3=tf.keras.layers.Dense(100,kernel_initializer=xavier,activation=tf.nn.relu)
+        self.out=tf.keras.layers.Dense(self.op_shape,kernel_initializer=xavier,activation=tf.nn.relu)
         self.train_op = tf.keras.optimizers.Adam(learning_rate=0.001)
     
     # Running the model
@@ -71,27 +75,52 @@ class coefficient_model(Model):
     # Train the model
     def train_model(self):
         plot_iter = 0
-        r2_iter = 0
-        for i in range(200):
-            for batch in range(7):
-                input_batch = self.input_data_train[batch*20:(batch+1)*20]
-                output_batch = self.output_data_train[batch*20:(batch+1)*20]
+        stop_iter = 0
+        patience = 50
+        best_valid_loss = 999999.0 # Some large number 
+        
+        for i in range(2000):
+            # Training loss
+            for batch in range(10):
+                input_batch = self.input_data_train[batch*5:(batch+1)*5]
+                output_batch = self.output_data_train[batch*5:(batch+1)*5]
                 self.network_learn(input_batch,output_batch)
 
-                
-            # Check accuracy
-            if r2_iter == 10:
-                predictions = self.call(self.input_data_test)
-                print('Test loss:',self.get_loss(self.input_data_test,self.output_data_test).numpy())
-                print('Test loss:',self.get_loss(self.input_data_test,self.output_data_test))
-                r2 = coeff_determination(predictions,self.output_data_test)
-                print('Test R2:',r2)
-                r2_iter = 0
+            # Validation loss
+            valid_loss = 0.0
+            valid_r2 = 0.0
+            for batch in range(10):
+                input_batch = self.input_data_valid[batch*5:(batch+1)*5]
+                output_batch = self.output_data_valid[batch*5:(batch+1)*5]
+                valid_loss = valid_loss + self.get_loss(self.input_data_valid,self.output_data_valid).numpy()
 
-                # Save the model every 100 iterations
+                predictions = self.call(self.input_data_valid)
+                valid_r2 = valid_r2 + coeff_determination(predictions,self.output_data_valid)
+
+            valid_r2 = valid_r2/(batch+1)
+                
+
+            # Check early stopping criteria
+            if valid_loss < best_valid_loss:
+                
+                print('Improved validation loss from:',best_valid_loss,' to:', valid_loss)
+                print('Validation R2:',valid_r2)
+                
+                best_valid_loss = valid_loss
                 self.save_weights('./checkpoints/my_checkpoint')
+                stop_iter = 0
             else:
-                r2_iter = r2_iter + 1
+                stop_iter = stop_iter + 1
+
+            if stop_iter == patience:
+                break
+                
+        # Check accuracy on test
+        predictions = self.call(self.input_data_test)
+        print('Test loss:',self.get_loss(self.input_data_test,self.output_data_test).numpy())
+        r2 = coeff_determination(predictions,self.output_data_test)
+        print('Test R2:',r2)
+        r2_iter = 0            
 
     # Load weights
     def restore_model(self):
@@ -191,246 +220,16 @@ class coefficient_model_adjoint(Model):
     def restore_model(self):
         self.load_weights(dir_path+'/checkpoints/my_checkpoint') # Load pretrained model
 
-'''
-Next few model classes are still work in progress
-'''
-#Build the model which does basic map of inputs to coefficients but through a constrained linear projection (POD)
-class projection_model(Model):
-    def __init__(self,input_data,field_data,coeff_data,omat):
-        super(coefficient_model, self).__init__()
-
-        # Randomize datasets
-        idx = np.arange(np.shape(input_data)[0])
-        np.random.shuffle(idx)
-
-        # Segregate
-        self.input_data_train = input_data[idx[:140]]
-        self.input_data_test = input_data[idx[140:]]
-        self.ip_shape = np.shape(input_data)[1]
-
-        self.coeff_data_train = coeff_data[idx[:140]]
-        self.coeff_data_test = coeff_data[idx[140:]]
-
-        # Training snapshots
-        field_train = field_data[:,idx[:140]]
-        # Get rid of snapshot matrix mean
-        sm_mean = np.mean(field_train,axis=1)
-        field_train = field_train[:,:] - sm_mean[:,None]
-        # Testing snapshots
-        field_test = field_data[:,idx[140:]]
-        field_test = field_test[:,:] - sm_mean[:,None]
-        # Perform POD
-        new_mat = np.matmul(np.transpose(field_train),field_train)
-        w,v = LA.eig(new_mat)
-        # Bases
-        phi = np.real(np.matmul(field_train,v))
-        trange = np.arange(140)
-        phi[:,trange] = phi[:,trange]/np.sqrt(w[:])
-
-        output_data_train = np.matmul(np.transpose(phi),field_train)
-        output_data_test = np.matmul(np.transpose(phi),field_test)
-
-        self.op_shape = np.shape(output_data_train)[1]
-        self.basis = tf.Variable(phi.astype('float32'))
-
-        # Observation matrix to get coefficients
-        self.omat = tf.Variable(mat.astype('float32'))
-
-        # Define model
-        xavier=tf.keras.initializers.GlorotUniform()
-        self.l1=tf.keras.layers.Dense(10,kernel_initializer=xavier,activation=tf.nn.relu,input_shape=[self.ip_shape])
-        self.l2=tf.keras.layers.Dense(25,kernel_initializer=xavier,activation=tf.nn.relu)
-        self.l3=tf.keras.layers.Dense(50,kernel_initializer=xavier,activation=tf.nn.relu)
-        self.l4=tf.keras.layers.Dense(75,kernel_initializer=xavier,activation=tf.nn.relu)
-        self.l5=tf.keras.layers.Dense(50,kernel_initializer=xavier,activation=tf.nn.relu)
-        self.l6=tf.keras.layers.Dense(25,kernel_initializer=xavier,activation=tf.nn.relu)
-        self.l7=tf.keras.layers.Dense(10,kernel_initializer=xavier,activation=tf.nn.relu)
-        self.out=tf.keras.layers.Dense(self.op_shape,kernel_initializer=xavier)
-        self.train_op = tf.keras.optimizers.Adam(learning_rate=0.001)
-    
-    # Running the model
-    def call(self,X):
-        boom=self.l1(X)
-        boom=self.l2(boom)
-        boom=self.l3(boom)
-        boom=self.l4(boom)
-        boom=self.l5(boom)
-        boom=self.l6(boom)
-        boom=self.l7(boom)
-        boom=self.out(boom)
-        return boom
-    
-    # Regular MSE
-    def get_loss(self,X,Y,C): # The Y are POD coefficients and the C are lift/drag coefficients
-        boom=self.call(X) # Predicted coefficients
-        field = tf.linalg.matmul(boom,self.basis) # The field is reconstruct as a tf variable
-        cboom = tf.linalg.matmul(self.omat,field)
-
-        return tf.reduce_mean(tf.math.square(boom-Y)) + tf.reduce_mean(tf.math.square(cboom-C))
-
-    # get gradients - regular
-    def get_grad(self,X,Y,C):
-        with tf.GradientTape() as tape:
-            tape.watch(self.trainable_variables)
-            L = self.get_loss(X,Y,C)
-            g = tape.gradient(L, self.trainable_variables)
-        return g
-    
-    # perform gradient descent - regular
-    def network_learn(self,X,Y,C):
-        g = self.get_grad(X,Y,C)
-        self.train_op.apply_gradients(zip(g, self.trainable_variables))
-
-    # Train the model
-    def train_model(self):
-        plot_iter = 0
-        r2_iter = 0
-        for i in range(100):
-            for batch in range(7):
-                input_batch = self.input_data_train[batch*20:(batch+1)*20]
-                output_batch = self.output_data_train[batch*20:(batch+1)*20]
-                coeff_batch = self.coeff_data_train[batch*20:(batch+1)*20]
-                self.network_learn(input_batch,output_batch,coeff_batch)
-
-            # Check accuracy
-            if r2_iter == 10:
-                print('Test loss:',self.get_loss(self.input_data_test,self.output_data_test,self.coeff_data_test))
-                predictions = self.call(self.input_data_test)
-                r2 = coeff_determination(predictions,self.output_data_test)
-                print('Test R2:',r2)
-                r2_iter = 0
-
-                # Save the model every 100 iterations
-                self.save_weights('./checkpoints/my_checkpoint')
-            else:
-                r2_iter = r2_iter + 1
-
-    # Load weights
-    def restore_model(self):
-        self.load_weights(dir_path+'/checkpoints/my_checkpoint') # Load pretrained model
-
-
-
-# Build the model which does basic map of inputs to coefficients but through a constrained linear projection (POD)
-# Also enhance by adjoint information
-class projection_model_adjoint(Model):
-    def __init__(self,input_data,field_data,coeff_data,omat,adjoint_data):
-        super(coefficient_model, self).__init__()
-
-        # Randomize datasets
-        idx = np.arange(np.shape(input_data)[0])
-        np.random.shuffle(idx)
-
-        # Segregate
-        self.input_data_train = input_data[idx[:140]]
-        self.input_data_test = input_data[idx[140:]]
-        self.ip_shape = np.shape(input_data)[1]
-
-        self.coeff_data_train = coeff_data[idx[:140]]
-        self.coeff_data_test = coeff_data[idx[140:]]
-
-        self.adjoint_data_train = adjoint_data[idx[:140]]
-        self.adjoint_data_test = adjoint_data[idx[140:]]
-
-        # Training snapshots
-        field_train = field_data[:,idx[:140]]
-        # Get rid of snapshot matrix mean
-        sm_mean = np.mean(field_train,axis=1)
-        field_train = field_train[:,:] - sm_mean[:,None]
-        # Testing snapshots
-        field_test = field_data[:,idx[140:]]
-        field_test = field_test[:,:] - sm_mean[:,None]
-        # Perform POD
-        new_mat = np.matmul(np.transpose(field_train),field_train)
-        w,v = LA.eig(new_mat)
-        # Bases
-        phi = np.real(np.matmul(field_train,v))
-        trange = np.arange(140)
-        phi[:,trange] = phi[:,trange]/np.sqrt(w[:])
-
-        output_data_train = np.matmul(np.transpose(phi),field_train)
-        output_data_test = np.matmul(np.transpose(phi),field_test)
-
-        self.op_shape = np.shape(output_data_train)[1]
-        self.basis = tf.Variable(phi.astype('float32'))
-
-        # Observation matrix to get coefficients
-        self.omat = tf.Variable(mat.astype('float32'))
-
-        # Define model
-        xavier=tf.keras.initializers.GlorotUniform()
-        self.l1=tf.keras.layers.Dense(10,kernel_initializer=xavier,activation=tf.nn.relu,input_shape=[self.ip_shape])
-        self.l2=tf.keras.layers.Dense(25,kernel_initializer=xavier,activation=tf.nn.relu)
-        self.l3=tf.keras.layers.Dense(50,kernel_initializer=xavier,activation=tf.nn.relu)
-        self.l4=tf.keras.layers.Dense(75,kernel_initializer=xavier,activation=tf.nn.relu)
-        self.l5=tf.keras.layers.Dense(50,kernel_initializer=xavier,activation=tf.nn.relu)
-        self.l6=tf.keras.layers.Dense(25,kernel_initializer=xavier,activation=tf.nn.relu)
-        self.l7=tf.keras.layers.Dense(10,kernel_initializer=xavier,activation=tf.nn.relu)
-        self.out=tf.keras.layers.Dense(self.op_shape,kernel_initializer=xavier)
-        self.train_op = tf.keras.optimizers.Adam(learning_rate=0.001)
-    
-    # Running the model
-    def call(self,X):
-        boom=self.l1(X)
-        boom=self.l2(boom)
-        boom=self.l3(boom)
-        boom=self.l4(boom)
-        boom=self.l5(boom)
-        boom=self.l6(boom)
-        boom=self.l7(boom)
-        boom=self.out(boom)
-        return boom
-    
-    # Regular MSE
-    def get_loss(self,X,Y,C,A): # The Y are POD coefficients and the C are lift/drag coefficients, A is adjoint information
-        boom=self.call(X) # Predicted coefficients
-        field = tf.linalg.matmul(boom,self.basis) # The field is reconstruct as a tf variable
-        cboom = tf.linalg.matmul(self.omat,field)
-
-        return tf.reduce_mean(tf.math.square(boom-Y)) + tf.reduce_mean(tf.math.square(cboom-C))
-
-    # get gradients - regular
-    def get_grad(self,X,Y,C,A):
-        with tf.GradientTape() as tape:
-            tape.watch(self.trainable_variables)
-            L = self.get_loss(X,Y,C)
-            g = tape.gradient(L, self.trainable_variables)
-        return g
-    
-    # perform gradient descent - regular
-    def network_learn(self,X,Y,C,A):
-        g = self.get_grad(X,Y,C)
-        self.train_op.apply_gradients(zip(g, self.trainable_variables))
-
-    # Train the model
-    def train_model(self):
-        plot_iter = 0
-        r2_iter = 0
-        for i in range(100):
-            for batch in range(7):
-                input_batch = self.input_data_train[batch*20:(batch+1)*20]
-                output_batch = self.output_data_train[batch*20:(batch+1)*20]
-                coeff_batch = self.coeff_data_train[batch*20:(batch+1)*20]
-                adjoint_batch = self.adjoint_data_train[batch*20:(batch+1)*20]
-                self.network_learn(input_batch,output_batch,coeff_batch,adjoint_batch)
-
-            # Check accuracy
-            if r2_iter == 10:
-                print('Test loss:',self.get_loss(self.input_data_test,self.output_data_test,self.coeff_data_test,self.adjoint_data_test))
-                predictions = self.call(self.input_data_test)
-                r2 = coeff_determination(predictions,self.output_data_test)
-                print('Test R2:',r2)
-                r2_iter = 0
-
-                # Save the model every 100 iterations
-                self.save_weights('./checkpoints/my_checkpoint')
-            else:
-                r2_iter = r2_iter + 1
-
-    # Load weights
-    def restore_model(self):
-        self.load_weights(dir_path+'/checkpoints/my_checkpoint') # Load pretrained model
-
-
 if __name__ == '__main__':
-    pass
+    # Load dataset
+    input_data = np.load('doe_data.npy').astype('float32')
+    output_data = np.load('coeff_data.npy').astype('float32')
+    # Define a simple fully connected model
+    model=coefficient_model(input_data,output_data)
+    # Restore
+    model.restore_model()
+    # Predict
+    inputs = np.asarray([0.1009, 0.3306, 0.6281, 0.1494, -0.1627, -0.6344, -0.5927, 0.0421]).astype('float32')
+    inputs = inputs.reshape(1,8)
+    pred = model.predict(inputs)
+    print(pred)
