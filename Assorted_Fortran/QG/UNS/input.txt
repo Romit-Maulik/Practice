@@ -1,0 +1,17 @@
+256			!nx 
+512			!ny
+1.0d0		!Lx
+2.0d0		!Ly
+80.0d0		!Tmax
+10.0d0		!Tave
+2.5d-5		!dt
+450.0d0		!Re
+0.0036d0	!Ro
+0.0d0		!St
+80			!nfile
+10			!nsnap
+50			!fhist
+1			!isc; [1]on-screen, [2]off-screen
+19			!ich; check
+1			!iturb, [1] Dynamic Smagorinsky, [2] Dynamic Leith [3] AD [4] Smag [5] Leith
+

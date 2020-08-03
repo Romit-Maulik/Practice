@@ -1,0 +1,40 @@
+4096			!nx=ny; resolution
+0.5d0			!cfl; cfl < 1.0d0
+5.0d0			!tmax; maximum time 
+1				!iprob;[1]KHI,[2]Riemann(SHOCK),[3]RTI ,[4] RMI
+5				!nsnap; number of snapshots to store
+1.0d-6			!eps; weno constant to eleminate zero division
+2.0d0			!alpha; KHI mode 
+2.0d0			!denratio; density ratio (controls stratification)
+1.0d0			!ukhi; u velocity (Controls compressibilty of run)
+0.0d0			!ampx; amplitude for x vel peturbation (KHI)
+0.01d0			!ampy; amplitude for y vel peturbation (KHI)
+1.4d0			!gamma; ratio of specific heats
+5.0d-5			!dt
+2				!idt; [1]constant dt, [2]adaptive 
+1				!imodel; [1]Euler, [2]Navier-Stokes
+2				!isgs; [1]ILES-WENO, [2]DNS-CS
+1				!ifil; [1]No-Filter, [2]SF7, [3]Tam-7, [4] PM, [5]BogeyShock
+1.0d0			!sigma; filtering paramater
+1.0d-6			!rth; shock filter trashold
+1				!nfil; Filtering once [1], Filtering each timestep [2]
+1.0d5			!Re; Reynolds for NS model
+0.72d0			!Pr; Prandtl for NS model
+0				!iwriteI; [1] write initial field, [0]no-write
+1				!iwriteF; [1] write field data, [0]no-write
+1				!ix (flux option); [1]Rusanov [2]Roe [3]HLL [4]AUSM
+0.1d0			!cfix; entrophy-fix constant (between 0-1)
+1				!ie;[0]No-entropy-fix,[1]Harten
+1				!iw;[1]Davis,[2]Roe-ave,[3]Ein-1,[4]Pressure,[5]Ein-2 
+0.0015			!kappa; Kappa value for PMAD relaxation filter 
+75.0d0			!capK;	Diffusion constant value for PMAD relaxation filter
+1				!npst; Number of pseudotime iterations
+
+
+
+
+
+
+
+
+

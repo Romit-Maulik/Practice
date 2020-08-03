@@ -1,0 +1,29 @@
+2048		!nx 
+1024		!ny
+1		!isgs;[1]DNS,[2]SMA,[3]AD,[4]NEW-DYN,[5]DYN
+4.0d0	!kappa2; square of filtering ratio for DYN
+0.2d0	!CSMA; Smagorinsky constant
+1.0d0	!PrT; turbulent Prandtl number
+1		!idyn; dyn coeff [1]Homogen, [2]Abs, [3]Local
+3		!NA; AD order
+1.0d0	!betaAD; relaxation paramater 
+0.0d0   !afil; filtering paramater,e.g., afil=0 [-+0.5]
+0		!iadt; [0]VanCittert, [1]Landweber
+0.25d0  !del (Neumann stability condition; e.g., 0.25)
+0.9d0   !cfl (CFL convective stability; e.g., 0.9d0)
+2.0d0		!Lx; domain lenght in x
+1.0d0		!Ly; domain lenght in y
+100.0d0		!Tmax; Final time
+50.0d0		!Tave; Data collection starting time for mean 
+1.0d0		!TL; Lower plate temperature (hot plate)
+0.0d0		!TU; Upper plate temperature (cold plate)
+1.0d9		!Ra
+0.70d0		!Pr (0.7 for air, 6.2 for water)
+1.0d-2		!an; noise for initial
+1			!freq; writing frequency for time series
+1			!isc; [1]on-screen, [2]off-screen
+1			!imv; [1]field data for movie, [2]no-data
+50			!nfile; number of snapshots to make movie
+0			!ifinal; [0]from zero time, [1]from final.dat
+19			!ich; check
+

@@ -1,0 +1,27 @@
+2048		!NX=NY, resolution
+10000	!NT, number of time step
+64.0d3	!Re, Reynolds number 
+4.0d-4	!dt; time step
+0		!idt; [0]default dt,[1]adaptive dt
+0.8d0 	!cflc (stability for adaptive time, <1.0 )
+0.2d0 	!neuc (stability for adaptive time, <0.25 )
+1000	!nf;number of files 
+2		!isolver; [1]Compact,[2]Arakawa
+4		!ipr; [1]TGV,[2]Merger,[3]Shear,[4]Turb,[5]Kolmog,[6]final
+4.0d0	!kfor; Kolmogorov flow forcing scale
+0.8d0   !Afor; Kolmogorov flow forcing amp
+100.0d0 !lambda; Ratio of critical Re number for Kolmog
+0		!ion; [0]automated,[1]2048,[2]1024,[3]512,[4]256,[5]128,[6]64
+1		!ifil;[1]trap2,[2]Pade4
+0.0d0 	!afil; filtering parameter for Pade4
+0		!isgs;[0]dns,[1]sma,[2]lth,[3]ssba,[4]ssly,[5]ad,[9]dyn
+1   	!idyn;[1]cdyn,[2]dyn-ba,[3]dyn-ly,[4]dyn-ad
+2   	!ivis;[1]smagorinsky,[2]leith
+4.0d0 	!kappa2; square of the filter ratio (for dyn model)
+0.2d0 	!sma; smagorinsky constant (or leith constant)
+1.0d0 	!delta; filter length scale (length=delta*dx)
+5		!NADM, van cittert iterations
+1.0d0 	!betaAD, over relaxation for AD
+1		!isc; [1]write-screen
+19		!ich;Check for the file
+

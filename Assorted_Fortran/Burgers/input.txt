@@ -1,0 +1,30 @@
+512 	!nx; 512,1024,2048,4096,8192,16384,32768,65536
+64	!nr; DNS/LES grid ratio
+64	!ns; number of sample simulations
+5.0d-4	!nu; viscosity
+1.0d-5	!dt; time step
+0.5d0	!tm; maximum time
+2	!isp; [0]sin(x), [1]k-2 spectrum, [2]exp spectrum 
+10      !np; number of plots (equidistant in time)
+1	!im; [1]DNS,[2]LES-AD,[3]LES-SMA,[4]LES-AD-SMA
+1       !NA; ADM paramater
+1.0d0   !beta; relaxation parameter, i.e., beta=1.0d0 (default)
+1.0d0	!delta; smagorinsky stabilization radius/dx (delta = 1.0d0*dx) 
+0.2d0   !cs; smagorinsky coefficient
+6       !iord; [6]6th-order CS,[4]4th-order CS, [2]2nd-order
+2       !idns; [1]filtered DNS, [2]unfiltered DNS
+2       !inl; [1]convective,[2]conservative,[3]skew
+0       !ifil; [0]B2,[1]B4,[2]B6,[3]B8,[4]B21,[5]B31,[6]B41,[7]B22,[8]Pade6
+0.0d0   !afil; Pade filter free parameter
+0	!isf; [1]apply secondary filter after time step,[0]standard
+0.49d0  !sfil; Secondary Pade filter free parameter to remove small scale noise
+
+
+
+
+
+
+
+
+
+

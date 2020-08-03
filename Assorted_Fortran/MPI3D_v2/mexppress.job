@@ -1,0 +1,15 @@
+#!/bin/bash
+
+#PBS -q express
+#PBS -l nodes=1:ppn=4
+#PBS -l walltime=1:00:00
+#PBS -j oe
+
+cd $PBS_O_WORKDIR
+
+module load openmpi-1.4/intel
+
+NP=`cat $PBS_NODEFILE | wc -l`
+
+mpirun -np ${NP} ./a.out
+

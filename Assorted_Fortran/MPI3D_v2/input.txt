@@ -1,0 +1,41 @@
+512		!nx=ny=nz; resolution
+1		!ipr;[1]TGV,[2]KPV,[3]KHI
+0.25d0		!ukhi; shear velocity for KHI
+2.0d0		!denr; density ration for KHI
+0.5d0		!cfl; cfl < 1.0d0
+20.0d0		!tmax; maximum time 
+5		!nsnap; number of snapshots to store
+1.0d-6		!eps; weno constant to eleminate zero division (JS-shu)
+1.0d-20		!epz; weno constant to eleminate zero division (Z-zha)
+2		!pweno; smoothness indicator power (default=2)
+1.4d0		!gamma; ratio of specific heats
+5.0d-3		!dt
+2		!idt; [0]given,[1]constant cfl dt, [2]adaptive cfl dt
+2		!imodel; [1]Euler, [2]Navier-Stokes
+2		!isgs; [1]ILES-WENO, [2]DNS-CS
+0		!iweno;[0]Linear,[1]WENO-JS,[2]WENO-Z,[3]BWENO,[4]CWENO,[5]DRP-WENO
+0		!iupw; [0]CS6,[1]UPWIND5,[2]DRP,[3]Bandwidth
+1		!ifil; [1]No-Filter, [2]SF7(standard), [3]Tam-7
+1.0d0		!sigma; filtering strength paramater [0.0-->1.0] (default=1.0)
+1.6d3	!Re; Reference Reynolds for NS model
+0.72d0		!Pr; Reference Prandtl for NS model
+0.08d0		!Ma; Reference Mach number for NS model(Ma=ukhi*sqrt(gamma*p/r))
+300.0d0		!Tref; Reference temperature (for Sutherland's law scaling)
+0		!iwriteI; [1] write initial field, [0]no-write
+0		!iwriteF; [1] write field data in tecplot, [0]no-write
+1		!iwriteS; [1] save conservative field data for postprocessing
+2		!ix (flux); [1]Rusanov [2]Roe [3]HLL [4]AUSM 
+2.0d0	!alpha (KHI mode)
+0.01d0 	!ampy (perturbation velocity)
+
+
+
+
+
+
+
+
+
+
+
+
