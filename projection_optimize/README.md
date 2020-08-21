@@ -18,6 +18,4 @@ python nn_opt.py optimize shape_lift
 
 # Sample results
 
-Optimization using adjoint of surrogate DNN
-
-![DNN](https://github.com/Romit-Maulik/Practice/blob/master/projection_optimize/Shapes/Shape_Comparison: DNN.jpeg)
+In `Shapes/` folder
