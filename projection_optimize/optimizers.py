@@ -5,12 +5,6 @@ np.random.seed(10)
 from scipy.optimize import minimize
 from constraints import t_lower, t_upper
 
-temp_lift = 1.1
-# For lift constraint - constrained at 1.0
-def lift_eq_cons(input_var):
-    global temp_lift
-    return temp_lift-0.8
-
 class surrogate_optimizer():
     def __init__(self,trained_model,num_pars,cons,lift_cons=False):
         self.model = trained_model
@@ -27,6 +21,38 @@ class surrogate_optimizer():
 
         self.scaler_min = tf.convert_to_tensor(trained_model.op_scaler.data_min_,dtype='float32') # Required for rescaling within TF
         self.scaler_max = tf.convert_to_tensor(trained_model.op_scaler.data_max_,dtype='float32')
+
+        self.target_lift = 1.0
+
+    # For lift constraint - constrained at self.target_lift
+    def lift_eq_cons(self,input_var):
+        input_var = input_var.reshape(1,self.num_pars).astype('float32')
+        input_var = tf.Variable(input_var)
+            
+        op = self.model(input_var)
+        op = op*(self.scaler_max-self.scaler_min) + self.scaler_min
+        # op = op*(self.scaler_var)+self.scaler_mean
+
+        pred = (op[0][1]-self.target_lift).numpy()
+            
+        return pred
+
+    def jac_equality(self,input_var):
+        input_var = input_var.reshape(1,self.num_pars).astype('float32')
+        input_var = tf.Variable(input_var)
+            
+        with tf.GradientTape(persistent=True) as t:
+            t.watch(input_var)
+
+            op = self.model(input_var)
+            op = op*(self.scaler_max-self.scaler_min) + self.scaler_min
+            # op = op*(self.scaler_var)+self.scaler_mean
+
+            # This is the objective function (square of the first variable out)
+            pred = (op[0][1]-self.target_lift)
+            
+        return t.gradient(pred, input_var).numpy()[0,:].astype('double')
+
 
     def jac_method(self,input_var):
         input_var = input_var.reshape(1,self.num_pars).astype('float32')
@@ -64,7 +90,7 @@ class surrogate_optimizer():
 
     def single_optimize(self,init_guess):
         if self.lift_cons_append:
-            self.cons.append({'type': 'eq', 'fun': lift_eq_cons})
+            self.cons.append({'type': 'eq', 'fun': self.lift_eq_cons, 'jac': self.jac_equality})
             self.lift_cons_append = False
 
         self.solution = minimize(self.residual,init_guess,

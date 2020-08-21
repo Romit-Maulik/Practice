@@ -6,32 +6,27 @@ import numpy as np
 np.random.seed(15)
 import matplotlib.pyplot as plt
 
-from surrogate_models import coefficient_model, coefficient_model_adjoint
+from surrogate_models import coefficient_model
 from optimizers import surrogate_optimizer
 from utils import shape_return
 
 if __name__ == '__main__':
 
     '''
-    Usage: python nn_opt.py [train/optimize/rl_train/rl_optimize] [regular/augmented]
+    Usage: python nn_opt.py [train/optimize/rl_train/rl_optimize] [shape/shape_lift]
     '''
 
-    parser = argparse.ArgumentParser(description='Adjoint augmented surrogate model based optimization')
-    parser.add_argument('mode', metavar='mode', type=str, help='[train/optimize/rl_optimize]') #Train a network or use a trained network for minimize/rl_minimize
+    parser = argparse.ArgumentParser(description='Surrogate model based optimization')
+    parser.add_argument('mode', metavar='mode', type=str, help='[train/optimize/rl_train/rl_optimize]') #Train a network or use a trained network for minimize/rl_minimize
     parser.add_argument('constraint_options',metavar='constraint_options', type=str, help='[shape/shape_lift]')
-    parser.add_argument('adjoint_mode', metavar='adjoint_mode', type=str, help='[regular/augmented]')
     args = parser.parse_args()
 
     # Load dataset
     input_data = np.load('DOE_2000.npy').astype('float32')
     output_data = np.load('coeff_data_2000.npy').astype('float32')
-    adjoint_data = np.zeros(shape=(2000,8)).astype('float32') # placeholder
 
     # Define a simple fully connected model
-    if args.adjoint_mode == 'augmented':
-        model=coefficient_model_adjoint(input_data,output_data,adjoint_data)
-    else:
-        model=coefficient_model(input_data,output_data)
+    model=coefficient_model(input_data,output_data)
 
     # Train the model
     if args.mode == 'train':
@@ -52,7 +47,7 @@ if __name__ == '__main__':
         else:
             opt = surrogate_optimizer(model,num_pars,cons)
         
-        best_func_val, solution, best_opt = opt.optimize(30) # Optimize with 10 restarts
+        best_func_val, solution, best_opt = opt.optimize(10) # Optimize with 10 restarts
         
         # Visualize airfoil shape evolution
         for i in range(1,np.shape(best_opt)[0]):
@@ -67,10 +62,9 @@ if __name__ == '__main__':
         env_params['num_params'] = np.shape(input_data)[1]
         env_params['num_obs'] = np.shape(output_data)[1]
         env_params['init_guess'] = np.asarray(t_base)
-        env_params['model_type'] = 'regular'
-        env_params['num_steps'] = 5 # 10 step iteration
+        env_params['num_steps'] = 1 # 1 step prediction
 
-        rl_opt = rl_optimize(env_params,args.adjoint_mode,50,env_params['num_steps']) # 20 iteration optimization, 10 steps
+        rl_opt = rl_optimize(env_params,50,env_params['num_steps']) # 20 iteration optimization, 10 steps
         rl_opt.train()
 
     elif args.mode == 'rl_optimize':
@@ -82,10 +76,9 @@ if __name__ == '__main__':
         env_params['num_params'] = np.shape(input_data)[1]
         env_params['num_obs'] = np.shape(output_data)[1]
         env_params['init_guess'] = np.asarray(t_base,dtype='float32')
-        env_params['model_type'] = 'regular'
-        env_params['num_steps'] = 5
+        env_params['num_steps'] = 1
 
-        rl_opt = rl_optimize(env_params,args.adjoint_mode,50,env_params['num_steps']) # 20 iteration optimization, 10 steps
+        rl_opt = rl_optimize(env_params,50,env_params['num_steps']) # 20 iteration optimization, 10 steps
 
         f = open('rl_checkpoint','r')
         checkpoint_path = f.readline()

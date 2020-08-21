@@ -16,7 +16,7 @@ from ray.tune.registry import register_env
 import gym
 from gym.spaces import Box
 
-from surrogate_models import coefficient_model, coefficient_model_adjoint
+from surrogate_models import coefficient_model
 from surrogate_environments import airfoil_surrogate_environment
 
 tf = try_import_tf()
@@ -43,7 +43,7 @@ class CustomModel(TFModelV2):
 
 
 class rl_optimize():
-    def __init__(self,env_params,model_args,num_iters,num_steps):
+    def __init__(self,env_params,num_iters,num_steps):
         # Load dataset
         input_data = np.load(dir_path+'/DOE_2000.npy').astype('float32')
         output_data = np.load(dir_path+'/coeff_data_2000.npy').astype('float32')
@@ -51,11 +51,7 @@ class rl_optimize():
         self.obs_shape = np.shape(output_data)[1]
 
         # Reload model because of TF2/Ray issues
-        if model_args == 'regular':
-            self.model=coefficient_model(input_data,output_data)
-        elif model_args == 'augmented':
-            adjoint_data = np.zeros(shape=(2000,8)).astype('float32') # placeholder
-            self.model=coefficient_model_adjoint(input_data,output_data,adjoint_data)
+        self.model=coefficient_model(input_data,output_data)
 
         ray.init()
 
