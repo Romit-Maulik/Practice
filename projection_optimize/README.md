@@ -20,9 +20,4 @@ python nn_opt.py optimize shape_lift
 
 Optimization using adjoint of surrogate DNN
 
-![DNN](https://github.com/Romit-Maulik/Practice/blob/master/projection_optimize/Shapes/Shape_Comparison_DNN.jpeg)
-
-
-Optimization using RL + surrogate DNN
-
-![RL](https://github.com/Romit-Maulik/Practice/blob/master/projection_optimize/Shapes/Shape_Comparison_RL.jpeg)
+![DNN](https://github.com/Romit-Maulik/Practice/blob/master/projection_optimize/Shapes/Shape_Comparison: DNN.jpeg)
