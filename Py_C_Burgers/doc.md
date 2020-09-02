@@ -10,3 +10,9 @@
 3. numpy 1.18.1
 4. tensorflow 1.15
 5. matplotlib 3.1.0
+
+# What you should see
+
+![Fields](Figure_1.png "Fields")
+
+![Modes](Figure_2.png "Modes")
