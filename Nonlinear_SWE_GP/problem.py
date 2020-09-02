@@ -6,7 +6,7 @@ from mpl_toolkits.mplot3d import Axes3D
 from parameters import Nx, Ny, Lx, Ly
 from parameters import rho, grav, dt, dx, dy, ft
 from parameters import K
-from parameters import plot_viz, num_steps_per_plot
+from parameters import plot_viz, num_steps_per_plot, num_samples, num_train
 
 # Common functions for spatial discretizations
 def state_reconstruction(q,Nx,Ny):
@@ -163,14 +163,6 @@ def plot_coefficients(Ytilde):
     plt.legend()
     plt.show()
 
-def plot_coefficients_compare(Ytilde_true,Ytilde_ml,mode_num):
-    fig,ax = plt.subplots(nrows=1,ncols=1)
-    ax.plot(Ytilde_true[mode_num,:],label='True')
-    ax.plot(Ytilde_ml[mode_num,:],label='ML')
-    plt.title('Mode '+str(mode_num)+' comparison')
-    plt.legend()
-    plt.show()
-
 def plot_fields_debug(X,Y,q,label,iter):
     fig = plt.figure(figsize = (11, 7))
     ax = Axes3D(fig)
@@ -188,12 +180,6 @@ def plot_fields_debug(X,Y,q,label,iter):
     else:
         ax.set_zlim((-1,1))
     plt.savefig(label+'_'+str(iter)+'.png')
-
-# ML common functions
-def coeff_determination(y_pred, y_true): #Order of function inputs is important here        
-    SS_res =  Kback.sum(Kback.square( y_true-y_pred )) 
-    SS_tot = Kback.sum(Kback.square( y_true - Kback.mean(y_true) ) )
-    return ( 1 - SS_res/(SS_tot + Kback.epsilon()) )    
 
 # Shallow water equations class
 class shallow_water(object):
@@ -303,7 +289,7 @@ class shallow_water(object):
         print('Solution finished')
 
 class shallow_water_rom(object):
-    def __init__(self,snapshot_matrix_pod):
+    def __init__(self,snapshot_matrix_pod,snapshot_matrix_test):
         """
         K - number of POD DOF for GP        
         snapshot_matrix_pod - At snapshot location
@@ -314,12 +300,12 @@ class shallow_water_rom(object):
         self.q2_snapshot_matrix_pod = snapshot_matrix_pod[Nx*Ny:2*Nx*Ny,:]
         self.q3_snapshot_matrix_pod = snapshot_matrix_pod[2*Nx*Ny:,:]
 
-        self.q1_snapshots = np.zeros(shape=(int(ft/(num_steps_per_plot*dt)),self.K),dtype='double')
-        self.q2_snapshots = np.zeros(shape=(int(ft/(num_steps_per_plot*dt)),self.K),dtype='double')
-        self.q3_snapshots = np.zeros(shape=(int(ft/(num_steps_per_plot*dt)),self.K),dtype='double')
+        self.q1_snapshot_matrix_test = snapshot_matrix_test[:Nx*Ny,:]
+        self.q2_snapshot_matrix_test = snapshot_matrix_test[Nx*Ny:2*Nx*Ny,:]
+        self.q3_snapshot_matrix_test = snapshot_matrix_test[2*Nx*Ny:,:]
 
         # Plot interval
-        self.plot_interval = 1
+        self.plot_interval = num_steps_per_plot
 
         # Plot related
         self.Nx = Nx
@@ -333,12 +319,13 @@ class shallow_water_rom(object):
         # Meshgrid for plotting
         self.X, self.Y = np.meshgrid(x, y) 
 
-    def method_of_snapshots(self,snapshot_matrix_pod,truncation):
+    def method_of_snapshots(self,snapshot_matrix_pod,snapshot_matrix_test):
         """
         Read snapshot_matrix (field or nonlinear term) and compute the POD bases and coefficients
         snapshot_matrix_pod - N x S - where N is DOF, S snapshots
         V - truncated POD basis matrix - shape: NxK - K is truncation number
-        Ytilde - shape: KxS - POD basis coefficients
+        Ytilde - shape: KxS - POD basis coefficients for train data
+        Ytilde_test - shape: KxS - POD basis coefficients for test data
         """
         new_mat = np.matmul(np.transpose(snapshot_matrix_pod),snapshot_matrix_pod)
         w,v = np.linalg.eig(new_mat)
@@ -347,16 +334,31 @@ class shallow_water_rom(object):
         trange = np.arange(np.shape(V)[1])
         V[:,trange] = V[:,trange]/np.sqrt(w[:])
         # Truncate phis
-        V = V[:,0:truncation] # Columns are modes
+        V = V[:,0:self.K] # Columns are modes
+        # Find POD coefficients
         Ytilde = np.matmul(np.transpose(V),snapshot_matrix_pod)
+        Ytilde_test = np.matmul(np.transpose(V),snapshot_matrix_test)
 
-        return w, V, Ytilde
+        return np.sqrt(np.abs(w)), V, Ytilde, Ytilde_test
+
+    def svd_method(self,snapshot_matrix_pod):
+        """
+        Read snapshot_matrix (field or nonlinear term) and compute the POD bases and coefficients
+        snapshot_matrix_pod - N x S - where N is DOF, S snapshots
+        V - truncated POD basis matrix - shape: NxK - K is truncation number
+        Ytilde - shape: KxS - POD basis coefficients
+        """
+        phi, S, Vt = np.linalg.svd(snapshot_matrix_pod)
+        Ytilde = np.matmul(phi.T[:,truncation],snapshot_matrix)
+        Ytilde_test = np.matmul(phi.T[:,truncation],snapshot_matrix_test)
+
+        return S, phi.T[:,self.K], Ytilde, Ytilde_test
 
     def generate_pod(self):
         # Do the POD of the conserved variables 
-        self.q1_w, self.q1_V, self.q1_Ytilde = self.method_of_snapshots(self.q1_snapshot_matrix_pod,self.K)
-        self.q2_w, self.q2_V, self.q2_Ytilde = self.method_of_snapshots(self.q2_snapshot_matrix_pod,self.K)
-        self.q3_w, self.q3_V, self.q3_Ytilde = self.method_of_snapshots(self.q3_snapshot_matrix_pod,self.K)
+        self.q1_w, self.q1_V, self.q1_Ytilde, self.q1_Ytilde_test = self.method_of_snapshots(self.q1_snapshot_matrix_pod,self.q1_snapshot_matrix_test)
+        self.q2_w, self.q2_V, self.q2_Ytilde, self.q2_Ytilde_test = self.method_of_snapshots(self.q2_snapshot_matrix_pod,self.q2_snapshot_matrix_test)
+        self.q3_w, self.q3_V, self.q3_Ytilde, self.q3_Ytilde_test = self.method_of_snapshots(self.q3_snapshot_matrix_pod,self.q3_snapshot_matrix_test)
 
         # Print captured energy
         print('Capturing ',np.sum(self.q1_w[0:self.K])/np.sum(self.q1_w),'% variance in conserved variable 1')
@@ -367,9 +369,27 @@ class shallow_water_rom(object):
         np.save('PCA_Vectors_q2.npy',self.q2_V) 
         np.save('PCA_Vectors_q3.npy',self.q3_V) 
 
-        np.save('PCA_Coefficients_q1.npy',self.q1_Ytilde) # The true projection
-        np.save('PCA_Coefficients_q2.npy',self.q2_Ytilde) 
-        np.save('PCA_Coefficients_q3.npy',self.q3_Ytilde) 
+        np.save('PCA_Coefficients_q1_train.npy',self.q1_Ytilde) # The true projection
+        np.save('PCA_Coefficients_q2_train.npy',self.q2_Ytilde) 
+        np.save('PCA_Coefficients_q3_train.npy',self.q3_Ytilde) 
+
+        np.save('PCA_Coefficients_q1_test.npy',self.q1_Ytilde_test) # The true projection
+        np.save('PCA_Coefficients_q2_test.npy',self.q2_Ytilde_test) 
+        np.save('PCA_Coefficients_q3_test.npy',self.q3_Ytilde_test)
+
+    def load_pregenerated_pod(self):
+
+        self.q1_V = np.load('PCA_Vectors_q1.npy')  # The POD bases
+        self.q2_V = np.load('PCA_Vectors_q2.npy') 
+        self.q3_V = np.load('PCA_Vectors_q3.npy') 
+
+        self.q1_Ytilde = np.load('PCA_Coefficients_q1_train.npy') # The true projection
+        self.q2_Ytilde = np.load('PCA_Coefficients_q2_train.npy') 
+        self.q3_Ytilde = np.load('PCA_Coefficients_q3_train.npy') 
+
+        self.q1_Ytilde_test = np.load('PCA_Coefficients_q1_test.npy') # The true projection
+        self.q2_Ytilde_test = np.load('PCA_Coefficients_q2_test.npy')
+        self.q3_Ytilde_test = np.load('PCA_Coefficients_q3_test.npy')
 
     def plot_reconstruction_error(self):
         fig,ax = plt.subplots(ncols=3)
@@ -379,55 +399,60 @@ class shallow_water_rom(object):
         plt.show()
 
     def solve(self):
-        plot_iter = 0
-        save_iter = 0
-        iter_num = 0
-
-        # initalize solutions
-        self.q1 = np.copy(self.q1_Ytilde[:,0])
-        self.q2 = np.copy(self.q2_Ytilde[:,0])
-        self.q3 = np.copy(self.q3_Ytilde[:,0])
-        self.t = 0.0
-
         from time import time
+        num_test = int(num_samples-num_train)
+
+        self.q1_snapshots = np.copy(self.q1_Ytilde_test)
+        self.q2_snapshots = np.copy(self.q2_Ytilde_test)
+        self.q3_snapshots = np.copy(self.q3_Ytilde_test)
 
         start_time = time()
+        for test in range(num_test):
 
-        while self.t < ft:            
-            print('Time is:',self.t)
-            self.t = self.t + dt
+            plot_iter = 0
+            save_iter = 0
+            iter_num = 0
 
-            self.integrate_rk()
-            iter_num = iter_num + 1
-            
-            if plot_iter == self.plot_interval:     
-                # q1_full = np.matmul(self.q1_V,self.q1)
-                # q2_full = np.matmul(self.q2_V,self.q2)
-                # q3_full = np.matmul(self.q3_V,self.q3)
-            
-                # flattened_data = np.concatenate((q1_full,q2_full,q3_full),axis=0)
-                # self.rom_pred_snapshots.append(flattened_data)
+            # initalize solutions
+            self.q1 = np.copy(self.q1_Ytilde_test[:,num_steps_per_plot*test])
+            self.q2 = np.copy(self.q2_Ytilde_test[:,num_steps_per_plot*test])
+            self.q3 = np.copy(self.q3_Ytilde_test[:,num_steps_per_plot*test])
+            self.t = 0.0
 
-                self.q1_snapshots[save_iter,:] = self.q1[:]
-                self.q2_snapshots[save_iter,:] = self.q2[:]
-                self.q3_snapshots[save_iter,:] = self.q3[:]
+            save_iter = num_steps_per_plot*test+1
+            while self.t < ft:            
+                print('Time is:',self.t)
+                self.t = self.t + dt
 
+                self.integrate_rk()
+                iter_num = iter_num + 1
                 
-                if plot_viz:
-                    q1_full = np.reshape(q1_full,newshape=(Nx,Ny))
-                    plot_fields_debug(self.X,self.Y,q1_full,'q1',save_iter)
+                if plot_iter == self.plot_interval:     
+                    # q1_full = np.matmul(self.q1_V,self.q1)
+                    # q2_full = np.matmul(self.q2_V,self.q2)
+                    # q3_full = np.matmul(self.q3_V,self.q3)
                 
-                plot_iter = 0
-                save_iter = save_iter + 1
-            plot_iter = plot_iter + 1
+                    # flattened_data = np.concatenate((q1_full,q2_full,q3_full),axis=0)
+                    # self.rom_pred_snapshots.append(flattened_data)
 
-        print('Elapsed time GP:',time()-start_time)
-        
-        print('Solution finished')
-        # np.save('ROM_Snapshots.npy',self.rom_pred_snapshots)
-        np.save('q1_snapshots.npy',self.q1_snapshots)
-        np.save('q2_snapshots.npy',self.q2_snapshots)
-        np.save('q3_snapshots.npy',self.q3_snapshots)
+                    self.q1_snapshots[:,save_iter] = self.q1[:]
+                    self.q2_snapshots[:,save_iter] = self.q2[:]
+                    self.q3_snapshots[:,save_iter] = self.q3[:]
+
+                    
+                    if plot_viz:
+                        q1_full = np.reshape(q1_full,newshape=(Nx,Ny))
+                        plot_fields_debug(self.X,self.Y,q1_full,'q1',save_iter)
+                    
+                    plot_iter = 0
+                    save_iter = save_iter + 1
+                
+                plot_iter = plot_iter + 1
+
+        print('Average elapsed time GP:',(time()-start_time)/(num_test))
+        np.save('PCA_Coefficients_q1_pred.npy',self.q1_snapshots)
+        np.save('PCA_Coefficients_q2_pred.npy',self.q2_snapshots)
+        np.save('PCA_Coefficients_q3_pred.npy',self.q3_snapshots)
         
 
     def integrate_rk(self):
