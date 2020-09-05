@@ -98,10 +98,15 @@ class Regression():
             'xgb': MultiOutputRegressor(xgboost.XGBRegressor()),
             'dl': None
         }
-        self.load_data()
-        self.preprocess_data()
-        for key in self.regressors.keys():
-            self.fit_model(key)
+
+        if trainFilename is not None and testFilename is not None:
+            self.load_data()
+            self.preprocess_data()
+            for key in self.regressors.keys():
+                self.fit_model(key)
+        else:
+            print('Loading dummy regression class')
+
 
     def load_data(self):
         filename = self.trainFilename
