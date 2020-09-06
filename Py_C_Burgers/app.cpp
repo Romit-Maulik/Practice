@@ -143,6 +143,7 @@ void collect_data(PyObject *pcollection_func, double *u)
 
   Py_DECREF(pArgs);
   Py_DECREF(pValue);
+  PyArray_ENABLEFLAGS((PyArrayObject*)array_1d, NPY_ARRAY_OWNDATA); // Deallocate array_1d
   // Py_DECREF(array_1d);
 }
 
@@ -163,5 +164,6 @@ void analyse_data(PyObject *panalyses_func, double *u)
 
   Py_DECREF(pArgs);
   Py_DECREF(pValue);
+  PyArray_ENABLEFLAGS((PyArrayObject*)array_1d, NPY_ARRAY_OWNDATA); // Deallocate array_1d
   // Py_DECREF(array_1d);
 }

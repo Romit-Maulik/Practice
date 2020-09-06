@@ -1,4 +1,4 @@
-# Install script for directory: /home/rmlans/Desktop/Tutorials/Burgers_PyCAE
+# Install script for directory: /home/rmlans/Desktop/Practice/Py_C_Burgers
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)
@@ -45,5 +45,5 @@ endif()
 
 string(REPLACE ";" "\n" CMAKE_INSTALL_MANIFEST_CONTENT
        "${CMAKE_INSTALL_MANIFEST_FILES}")
-file(WRITE "/home/rmlans/Desktop/Tutorials/Burgers_PyCAE/build/${CMAKE_INSTALL_MANIFEST}"
+file(WRITE "/home/rmlans/Desktop/Practice/Py_C_Burgers/build/${CMAKE_INSTALL_MANIFEST}"
      "${CMAKE_INSTALL_MANIFEST_CONTENT}")

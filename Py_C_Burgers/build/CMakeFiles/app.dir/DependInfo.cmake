@@ -4,7 +4,7 @@ set(CMAKE_DEPENDS_LANGUAGES
   )
 # The set of files for implicit dependencies of each language:
 set(CMAKE_DEPENDS_CHECK_CXX
-  "/home/rmlans/Desktop/Tutorials/Burgers_PyCAE/app.cpp" "/home/rmlans/Desktop/Tutorials/Burgers_PyCAE/build/CMakeFiles/app.dir/app.cpp.o"
+  "/home/rmlans/Desktop/Practice/Py_C_Burgers/app.cpp" "/home/rmlans/Desktop/Practice/Py_C_Burgers/build/CMakeFiles/app.dir/app.cpp.o"
   )
 set(CMAKE_CXX_COMPILER_ID "GNU")
 
