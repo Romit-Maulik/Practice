@@ -339,7 +339,7 @@ class shallow_water_rom(object):
         Ytilde = np.matmul(np.transpose(V),snapshot_matrix_pod)
         Ytilde_test = np.matmul(np.transpose(V),snapshot_matrix_test)
 
-        return np.sqrt(np.abs(w)), V, Ytilde, Ytilde_test
+        return w, V, Ytilde, Ytilde_test
 
     def svd_method(self,snapshot_matrix_pod):
         """
@@ -360,7 +360,7 @@ class shallow_water_rom(object):
         self.q2_w, self.q2_V, self.q2_Ytilde, self.q2_Ytilde_test = self.method_of_snapshots(self.q2_snapshot_matrix_pod,self.q2_snapshot_matrix_test)
         self.q3_w, self.q3_V, self.q3_Ytilde, self.q3_Ytilde_test = self.method_of_snapshots(self.q3_snapshot_matrix_pod,self.q3_snapshot_matrix_test)
 
-        # Print captured energy
+        # Print captured energy - using definition in https://arxiv.org/pdf/1308.3276.pdf
         print('Capturing ',np.sum(self.q1_w[0:self.K])/np.sum(self.q1_w),'% variance in conserved variable 1')
         print('Capturing ',np.sum(self.q2_w[0:self.K])/np.sum(self.q2_w),'% variance in conserved variable 2')
         print('Capturing ',np.sum(self.q3_w[0:self.K])/np.sum(self.q3_w),'% variance in conserved variable 3')

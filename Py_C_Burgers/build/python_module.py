@@ -47,7 +47,9 @@ def analyses_func(placeholder):
     plt.xlabel('u')
     plt.show()
 
-    return None
+    np.save('eigenvectors.npy',v[0:3,:].T)
+
+    return v[0:3,:].T
 
 if __name__ == '__main__':
     pass
