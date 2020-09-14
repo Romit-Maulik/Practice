@@ -1,7 +1,7 @@
 // cmake .. // From build
 // make
-// export PATH=/home/rmlans/anaconda3/envs/deephyper_env/bin:$PATH
-// export LD_LIBRARY_PATH=/home/rmlans/anaconda3/envs/deephyper_env/lib:$LD_LIBRARY_PATH
+// export PATH=/home/rmlans/anaconda3/envs/tf2_env/bin:$PATH
+// export LD_LIBRARY_PATH=/home/rmlans/anaconda3/envs/tf2_env/lib:$LD_LIBRARY_PATH
 
 #include <iostream>
 #include <time.h>
@@ -14,7 +14,7 @@
 double PI = 3.1415926535;
 double NU = 0.01;
 int NX = 256;
-double DT = 0.01;
+double DT = 0.001;
 double FT = 2.0;
 
 void collect_data(PyObject *pcollection_func, double *u);
@@ -163,12 +163,11 @@ void analyse_data(PyObject *panalyses_func, double *u)
   std::cout << "Called python analyses function successfully"<<std::endl;
 
   Py_DECREF(pArgs);
-  Py_DECREF(pValue);
   PyArray_ENABLEFLAGS((PyArrayObject*)array_1d, NPY_ARRAY_OWNDATA); // Deallocate array_1d
   // Py_DECREF(array_1d);
 
   // Printing out values of the SVD eigenvectors of the first and second modes for each field DOF
-  double* c_out = static_cast<double*>(PyArray_DATA(pValue));
+  double* c_out = reinterpret_cast<double*>(PyArray_DATA(pValue));
   for (int i = 0; i < 10; ++i) // Only printing 10 out of NX for checking the order of allocation in arrays
   {
     std::cout << "First mode value: " << (*(c_out+i)) << std::endl;
@@ -179,5 +178,9 @@ void analyse_data(PyObject *panalyses_func, double *u)
     std::cout << "Second mode value: " << (*(c_out+NX+i)) << std::endl;
   }
 
+  Py_DECREF(pValue);
+
+  // Null and delete the pointer you allocated to get data from python
+  c_out = nullptr;
   delete[] c_out;
 }

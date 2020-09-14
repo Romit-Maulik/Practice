@@ -8,7 +8,7 @@ import numpy as np
 import tensorflow as tf
 import matplotlib.pyplot as plt
 
-data_array = np.zeros(shape=(200,258))
+data_array = np.zeros(shape=(2001,258)) # Very important that this matches the number of timesteps in the main solver
 x = np.arange(start=0,stop=2.0*np.pi,step=2.0*np.pi/256)
 iternum = 0
 
@@ -23,13 +23,14 @@ def analyses_func(placeholder):
     global data_array, x
     
     plt.figure()
-    for i in range(10,200,40):
+    for i in range(0,np.shape(data_array)[0],400):
         plt.plot(x,data_array[i,1:-1],label='Timestep '+str(i))
     plt.legend()
     plt.xlabel('x')
     plt.xlabel('u')
     plt.title('Field evolution')
-    plt.show()
+    plt.savefig('Field_evolution.png')
+    plt.close()
 
     # Perform an SVD
     data_array = data_array[:,1:-1]
@@ -45,11 +46,30 @@ def analyses_func(placeholder):
     plt.title('SVD Eigenvectors')
     plt.xlabel('x')
     plt.xlabel('u')
-    plt.show()
+    plt.savefig('SVD_Eigenvectors.png')
+    plt.close()
 
     np.save('eigenvectors.npy',v[0:3,:].T)
 
-    return v[0:3,:].T
+    # Train an LSTM on the coefficients of the eigenvectors
+    time_series = np.matmul(v[0:3,:],data_array.T).T
+    num_timesteps = np.shape(time_series)[0]
+
+    train_series = time_series[:num_timesteps//2]
+    test_series = time_series[num_timesteps//2:]
+
+    # import the LSTM architecture and initialize
+    from ml_module import standard_lstm
+    ml_model = standard_lstm(train_series)
+    # Train the model
+    ml_model.train_model()
+    # Restore best weights and perform an inference
+    print('Performing inference on testing data')
+    ml_model.model_inference(test_series)
+
+    return_data = v[0:3,:].T
+
+    return return_data
 
 if __name__ == '__main__':
     pass

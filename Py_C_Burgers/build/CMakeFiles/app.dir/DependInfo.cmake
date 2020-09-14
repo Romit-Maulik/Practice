@@ -10,8 +10,8 @@ set(CMAKE_CXX_COMPILER_ID "GNU")
 
 # The include file search paths:
 set(CMAKE_CXX_TARGET_INCLUDE_PATH
-  "/home/rmlans/anaconda3/envs/deephyper_env/include/python3.6m"
-  "/home/rmlans/anaconda3/envs/deephyper_env/lib/python3.6/site-packages/numpy/core/include"
+  "/home/rmlans/anaconda3/envs/tf2_env/include/python3.6m"
+  "/home/rmlans/anaconda3/envs/tf2_env/lib/python3.6/site-packages/numpy/core/include"
   )
 
 # Targets to which this target links.

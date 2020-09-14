@@ -6,5 +6,5 @@ CXX_FLAGS = -O3 -DNDEBUG   -std=gnu++11
 
 CXX_DEFINES = 
 
-CXX_INCLUDES = -I/home/rmlans/anaconda3/envs/deephyper_env/include/python3.6m -I/home/rmlans/anaconda3/envs/deephyper_env/lib/python3.6/site-packages/numpy/core/include 
+CXX_INCLUDES = -I/home/rmlans/anaconda3/envs/tf2_env/include/python3.6m -I/home/rmlans/anaconda3/envs/tf2_env/lib/python3.6/site-packages/numpy/core/include 
 
