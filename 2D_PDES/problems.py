@@ -241,7 +241,7 @@ class shallow_water(object):
             
             if plot_iter == self.plot_interval:
                 self.plot_fields_debug(self.q1)
-                self.q1_list.append(self.q1)
+                self.q1_list.append(self.q1.copy())
                 plot_iter = 0
 
             plot_iter = plot_iter + 1
@@ -317,7 +317,7 @@ class burgers(object):
         # Initialize fields
         self.initialize() 
 
-        # Field storage for viz
+        # Field storage for viz later
         self.q1_list = []
 
         # Plot interval
@@ -384,7 +384,7 @@ class burgers(object):
             
             if plot_iter == self.plot_interval:
                 self.plot_fields_debug(self.q1)
-                self.q1_list.append(self.q1)
+                self.q1_list.append(self.q1.copy())
                 plot_iter = 0
 
             plot_iter = plot_iter + 1
