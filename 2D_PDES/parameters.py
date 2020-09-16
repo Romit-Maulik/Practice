@@ -6,4 +6,3 @@ Ny = 64      # Discretization in y direction
 
 if __name__ == '__main__':
     print('This is the parameter file')
-    print(dx)
