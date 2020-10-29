@@ -13,7 +13,7 @@ dy = Ly/Ny
 grav = 9.8
 
 # Global parameters of SWE ROM
-K = 4
+K = 20
 
 # Mode of solver
 fvm_solve = False # True for data generation, False for POD-GP

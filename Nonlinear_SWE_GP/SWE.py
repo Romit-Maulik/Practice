@@ -37,9 +37,9 @@ if __name__ == '__main__':
         # Initialize ROM class
         gprom = shallow_water_rom(snapshot_matrix_pod,snapshot_matrix_test)
         # # Compute POD and DEIM coefficients
-        # gprom.generate_pod()
+        gprom.generate_pod()
         # Load POD and DEIM coefficients
-        gprom.load_pregenerated_pod()
+        # gprom.load_pregenerated_pod()
         # gprom.plot_reconstruction_error()      
         # Do GP solve using equations
         gprom.solve()
