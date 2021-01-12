@@ -32,7 +32,9 @@ if __name__ == '__main__':
     local_data = np.load('points_rank_'+str(rank)+'.npy') 
 
     # Run a local SVD and threshold
-    vlocal, slocal = generate_right_vectors(local_data)
+    _, slocal, vt = np.linalg.svd(local_data)
+    slocal = slocal[:num_modes]
+    vlocal = vt.T[:,:num_modes]
 
     # Find W
     wlocal = np.matmul(vlocal,np.diag(slocal).T)
@@ -58,6 +60,7 @@ if __name__ == '__main__':
     phi_local = []
     for mode in range(num_modes):
         phi_temp = 1.0/np.sqrt(s[mode])*np.matmul(local_data,x[:,mode:mode+1])
+        print(phi_temp.shape)
         phi_local.append(phi_temp)
 
     phi_local = np.asarray(phi_local)
