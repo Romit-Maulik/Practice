@@ -6,7 +6,7 @@ from mpi4py import MPI
 # export OPENBLAS_NUM_THREADS=1
 
 # Mode of the reduction (method of snapshots or SVD)
-mos_mode = True
+mos_mode = False
 
 # Method of snapshots to accelerate
 def generate_right_vectors_mos(Y):
@@ -77,7 +77,7 @@ if __name__ == '__main__':
     # perform APMOS at each local rank
     phi_local = []
     for mode in range(rval):
-        phi_temp = -1.0/s[mode]*np.matmul(local_data,x[:,mode:mode+1])
+        phi_temp = 1.0/s[mode]*np.matmul(local_data,x[:,mode:mode+1])
         phi_local.append(phi_temp)
 
     temp = phi_local[0]

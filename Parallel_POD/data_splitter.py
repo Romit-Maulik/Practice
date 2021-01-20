@@ -39,13 +39,13 @@ def method_of_snapshots(Y): #Mean removed
     w, v = np.linalg.eig(new_mat)
 
     # Bases
-    phi = np.real(np.matmul(Y,v))
+    phi = np.matmul(Y,np.real(v))
     trange = np.arange(np.shape(Y)[1])
-    phi[:,trange] = phi[:,trange]/np.sqrt(np.abs(w)[:])
+    phi[:,trange] = -phi[:,trange]/np.sqrt(np.abs(w)[:])
 
     return phi# POD modes
 
-# Method of snapshots to accelerate
+# SVD method
 def svd_pod(Y): #Mean removed
     '''
     Y - Snapshot matrix - shape: NxS
@@ -63,12 +63,14 @@ num_dof = total_data.shape[0]
 
 # Generate serial POD with MOS
 modes = method_of_snapshots(total_data)
+print(modes[:,0])
 np.save('Serial_Modes_MOS.npy',modes)
 
 # Generate serial POD with SVD
-modes = method_of_snapshots(total_data)
+modes = svd_pod(total_data)
+print(modes[:,0])
 np.save('Serial_Modes_SVD.npy',modes)
-# exit()
+exit()
 
 total_ranks = 6
 
