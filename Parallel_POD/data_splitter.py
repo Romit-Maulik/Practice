@@ -63,12 +63,18 @@ num_dof = total_data.shape[0]
 
 # Generate serial POD with MOS
 modes = method_of_snapshots(total_data)
-print(modes[:,0])
+# Check that this guy is close to one
+print('Inner product of similar modes summed:',np.sum(np.matmul(modes[:,1:2].T,modes[:,1:2])))
+# Check that this guy is close to zero
+print('Inner product of dissimilar modes summed:',np.sum(np.matmul(modes[:,1:2].T,modes[:,2:3])))
 np.save('Serial_Modes_MOS.npy',modes)
 
 # Generate serial POD with SVD
 modes = svd_pod(total_data)
-print(modes[:,0])
+# Check that this guy is close to one
+print('Inner product of similar modes summed:',np.sum(np.matmul(modes[:,1:2].T,modes[:,1:2])))
+# Check that this guy is close to zero
+print('Inner product of dissimilar modes summed:',np.sum(np.matmul(modes[:,1:2].T,modes[:,2:3])))
 np.save('Serial_Modes_SVD.npy',modes)
 exit()
 
