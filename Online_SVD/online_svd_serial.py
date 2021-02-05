@@ -52,22 +52,26 @@ class online_svd_calculator(object):
         plt.legend()
         plt.show()
 
+        np.save('Online_Serial_POD.npy',self.ui)
+        np.save('Online_Serial_SingularValues.npy',self.di)
+
+
+
         
 if __name__ == '__main__':
-    test_class = online_svd_calculator(10,0.95)
+    test_class = online_svd_calculator(10,1.0)
     # Load data
-    initial_data = np.load('Burgers_train_snapshots.npy')[:100,:,0].T
-    new_data = np.load('Burgers_train_snapshots.npy')[100:120,:,0].T
-    newer_data = np.load('Burgers_train_snapshots.npy')[120:150,:,0].T
+    initial_data = np.load('Batch_0_data.npy')
+    new_data = np.load('Batch_1_data.npy')
+    newer_data = np.load('Batch_2_data.npy')
+    newest_data = np.load('Batch_3_data.npy')
 
-    # Do a first modal decomposition and visualize
+    # Do a first modal decomposition
     test_class.initialize(initial_data)
-    test_class.plot_modes()
 
     # Incorporate new data and visualize
     test_class.incorporate_data(new_data)
-    test_class.plot_modes()
+    test_class.incorporate_data(newer_data)
+    test_class.incorporate_data(newest_data)
 
-    # Incorporate newer data and visualize
-    test_class.incorporate_data(new_data)
     test_class.plot_modes()
