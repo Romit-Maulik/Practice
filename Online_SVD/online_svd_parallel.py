@@ -19,6 +19,23 @@ def generate_right_vectors(Y):
 
     return v[:,:rval], np.sqrt(np.abs(w[:rval])) # Covariance eigenvectors, singular values
 
+# Check orthogonality
+def check_ortho(modes,num_modes):
+    for m1 in range(num_modes):
+        for m2 in range(num_modes):
+            if m1 == m2:
+                s_ = np.sum(modes[:,m1]*modes[:,m2]) 
+                if not np.isclose(s_,1.0):
+                    print('Orthogonality check failed')
+                    break
+            else:
+                s_ = np.sum(modes[:,m1]*modes[:,m2]) 
+                if not np.isclose(s_,0.0):
+                    print('Orthogonality check failed')
+                    break
+
+    print('Orthogonality check passed successfully')
+
 class online_svd_calculator(object):
     """
     docstring for online_svd_calculator:
@@ -186,8 +203,16 @@ class online_svd_calculator(object):
             plt.plot(serial_svs[:self.K],label='serial one-shot')
             plt.plot(parallel_online_svs[:self.K],label='parallel_online')
             plt.plot(serial_online_svs[:self.K],label='serial_online')
+            plt.title('Singular values')
             plt.legend()
             plt.show()
+
+            # Check orthogonality - should all be successful
+            check_ortho(serial,self.K)
+            check_ortho(serial_online,self.K)
+            check_ortho(parallel_online,self.K)
+
+
 
 
         
