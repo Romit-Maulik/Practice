@@ -42,7 +42,7 @@ class online_svd_calculator(object):
     K : Number of modes to truncate
     ff : Forget factor
     """
-    def __init__(self, K, ff):
+    def __init__(self, K, ff, low_rank=False):
         super(online_svd_calculator, self).__init__()
         self.K = K
         self.ff = ff
@@ -52,6 +52,7 @@ class online_svd_calculator(object):
         self.nprocs = self.comm.Get_size()
 
         self.iteration = 0
+        self.low_rank = low_rank
 
         self.initialize()
 
@@ -93,9 +94,29 @@ class online_svd_calculator(object):
                 self.comm.send(qglobal[rank*rlocal_shape_0:(rank+1)*rlocal_shape_0], dest=rank, tag=rank+10)
 
             # Step b of Levy-Lindenbaum - small operation
-            unew, snew, _ = np.linalg.svd(rfinal)
-            unew = unew[:,:self.K]
-            snew = snew[:self.K]
+            if self.low_rank:
+                # Low rank SVD
+                M = rfinal.shape[0]
+                N = rfinal.shape[1]
+                Kred = self.K
+
+                omega = np.random.normal(size=(N,2*Kred))
+
+                omega_pm = np.matmul(rfinal,np.transpose(rfinal))
+                Y = np.matmul(omega_pm,np.matmul(rfinal,omega))
+
+                Qred, Rred = np.linalg.qr(Y)
+
+                B = np.matmul(np.transpose(Qred),rfinal)
+                ustar, snew, _ = np.linalg.svd(B)
+                
+                unew = np.matmul(Qred,ustar)
+
+                unew = unew[:,:self.K]
+                snew = snew[:self.K]
+
+            else:
+                unew, snew, _ = np.linalg.svd(rfinal)
 
         else:
             # Receive qglobal slices from other ranks
@@ -211,16 +232,18 @@ class online_svd_calculator(object):
             check_ortho(serial,self.K)
             check_ortho(serial_online,self.K)
             check_ortho(parallel_online,self.K)
-
-
-
-
         
 if __name__ == '__main__':
-    test_class = online_svd_calculator(10,1.0)
+    from time import time
+    test_class = online_svd_calculator(10,1.0,low_rank=True)
+
+    start_time = time()
     test_class.initialize()
 
     for iteration in range(3):
         test_class.incorporate_data()
+    end_time = time()
+
+    print('Time required for parallel streaming SVD (each rank):', end_time-start_time)
 
     test_class.gather_modes()
