@@ -5,19 +5,41 @@ from mpi4py import MPI
 
 # For shared memory deployment: `export OPENBLAS_NUM_THREADS=1`
 
-# Method of snapshots to accelerate
-def generate_right_vectors(Y):
+# Method of snapshots
+def generate_right_vectors(A):
     '''
-    Y - Snapshot matrix - shape: NxS
+    A - Snapshot matrix - shape: NxS
     returns V - truncated right singular vectors
     '''
-    new_mat = np.matmul(np.transpose(Y),Y)
+    new_mat = np.matmul(np.transpose(A),A)
     w, v = np.linalg.eig(new_mat)
 
     svals = np.sqrt(np.abs(w))
     rval = np.argmax(svals<0.0001) # eps0
 
     return v[:,:rval], np.sqrt(np.abs(w[:rval])) # Covariance eigenvectors, singular values
+
+# Randomized SVD to accelerate
+def low_rank_svd(A,K):
+    M = A.shape[0]
+    N = A.shape[1]
+
+    omega = np.random.normal(size=(N,2*K))
+
+    omega_pm = np.matmul(A,np.transpose(A))
+    Y = np.matmul(omega_pm,np.matmul(A,omega))
+
+    Qred, Rred = np.linalg.qr(Y)
+
+    B = np.matmul(np.transpose(Qred),A)
+    ustar, snew, _ = np.linalg.svd(B)
+    
+    unew = np.matmul(Qred,ustar)
+
+    unew = unew[:,:K]
+    snew = snew[:K]
+
+    return unew, snew
 
 # Check orthogonality
 def check_ortho(modes,num_modes):
@@ -83,7 +105,7 @@ class online_svd_calculator(object):
             r_global = temp
 
             qglobal, rfinal = np.linalg.qr(r_global)
-            qglobal = -qglobal
+            qglobal = -qglobal # Trick for consistency
             rfinal = -rfinal
 
             # For this rank
@@ -96,25 +118,7 @@ class online_svd_calculator(object):
             # Step b of Levy-Lindenbaum - small operation
             if self.low_rank:
                 # Low rank SVD
-                M = rfinal.shape[0]
-                N = rfinal.shape[1]
-                Kred = self.K
-
-                omega = np.random.normal(size=(N,2*Kred))
-
-                omega_pm = np.matmul(rfinal,np.transpose(rfinal))
-                Y = np.matmul(omega_pm,np.matmul(rfinal,omega))
-
-                Qred, Rred = np.linalg.qr(Y)
-
-                B = np.matmul(np.transpose(Qred),rfinal)
-                ustar, snew, _ = np.linalg.svd(B)
-                
-                unew = np.matmul(Qred,ustar)
-
-                unew = unew[:,:self.K]
-                snew = snew[:self.K]
-
+                unew, snew = low_rank_svd(rfinal,self.K)
             else:
                 unew, snew, _ = np.linalg.svd(rfinal)
 
@@ -151,7 +155,10 @@ class online_svd_calculator(object):
                 temp = np.concatenate((temp,wglobal[i+1]),axis=-1)
             wglobal = temp
 
-            x, s, y = np.linalg.svd(wglobal)
+            if self.low_rank:
+                x, s = low_rank_svd(wglobal,self.K)
+            else:
+                x, s, y = np.linalg.svd(wglobal)
         else:
             x = None
             s = None
@@ -235,7 +242,7 @@ class online_svd_calculator(object):
         
 if __name__ == '__main__':
     from time import time
-    test_class = online_svd_calculator(10,1.0,low_rank=True)
+    test_class = online_svd_calculator(10,1.0,low_rank=False)
 
     start_time = time()
     test_class.initialize()
