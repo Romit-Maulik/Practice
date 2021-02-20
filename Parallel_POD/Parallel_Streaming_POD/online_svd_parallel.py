@@ -76,16 +76,9 @@ class online_svd_calculator(object):
         self.iteration = 0
         self.low_rank = low_rank
 
-        self.initialize()
-
     # Initialize
-    def initialize(self):        
-        A = self.get_new_data(iteration=self.iteration)
+    def initialize(self, A):        
         self.ulocal, self.svalue = self.parallel_svd(A)
-
-
-    def get_new_data(self,iteration):
-        return np.load('points_rank_'+str(self.rank)+'_batch_'+str(iteration)+'.npy')
 
     def parallel_qr(self,A):
         
@@ -182,9 +175,8 @@ class online_svd_calculator(object):
 
         return temp, s[:self.K] #
 
-    def incorporate_data(self):
+    def incorporate_data(self,A):
         self.iteration+=1
-        A = self.get_new_data(iteration=self.iteration)
 
         ll = self.ff*np.matmul(self.ulocal,np.diag(self.svalue))
         ll = np.concatenate((ll,A),axis=-1)
@@ -242,13 +234,19 @@ class online_svd_calculator(object):
         
 if __name__ == '__main__':
     from time import time
-    test_class = online_svd_calculator(10,1.0,low_rank=False)
-
+    # Initialize timer
     start_time = time()
-    test_class.initialize()
 
-    for iteration in range(3):
-        test_class.incorporate_data()
+    test_class = online_svd_calculator(10,1.0,low_rank=True)
+
+    iteration = 0
+    data = np.load('points_rank_'+str(test_class.rank)+'_batch_'+str(iteration)+'.npy')
+    test_class.initialize(data)
+
+    for iteration in range(1,4):
+        data = np.load('points_rank_'+str(test_class.rank)+'_batch_'+str(iteration)+'.npy')
+        test_class.incorporate_data(data)
+
     end_time = time()
 
     print('Time required for parallel streaming SVD (each rank):', end_time-start_time)
