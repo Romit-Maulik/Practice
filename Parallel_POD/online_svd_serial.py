@@ -50,6 +50,9 @@ class online_svd_calculator(object):
         plt.plot(self.ui[:,2],label='Mode 2')
         plt.plot(self.ui[:,3],label='Mode 3')
         plt.legend()
+        plt.title('Left singular vectors')
+        plt.xlabel('Domain')
+        plt.ylabel('U magnitude')
         plt.show()
 
         np.save('Online_Serial_POD.npy',self.ui)
@@ -59,12 +62,17 @@ class online_svd_calculator(object):
 
         
 if __name__ == '__main__':
+
     test_class = online_svd_calculator(10,1.0)
     # Load data
     initial_data = np.load('Batch_0_data.npy')
     new_data = np.load('Batch_1_data.npy')
     newer_data = np.load('Batch_2_data.npy')
     newest_data = np.load('Batch_3_data.npy')
+
+    from time import time
+    # Initialize timer
+    start_time = time()
 
     # Do a first modal decomposition
     test_class.initialize(initial_data)
@@ -73,5 +81,8 @@ if __name__ == '__main__':
     test_class.incorporate_data(new_data)
     test_class.incorporate_data(newer_data)
     test_class.incorporate_data(newest_data)
+
+    end_time = time()
+    print('Time required for serial streaming SVD:', end_time-start_time)
 
     test_class.plot_modes()
