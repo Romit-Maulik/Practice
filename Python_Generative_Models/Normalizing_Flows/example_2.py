@@ -32,10 +32,10 @@ class normalizing_flow(Model):
     @tf.function
     def call(self, x, params):
 
-        h1, ldj1 = self.l0(x) # Individual layer calls
-        h2, ldj2 = self.l1(h1)
-        h3, ldj3 = self.l2(h2)
-        h4, ldj4 = self.l3(h3)
+        h1, ldj1 = self.l0(x,params) # Individual layer calls
+        h2, ldj2 = self.l1(h1,params)
+        h3, ldj3 = self.l2(h2,params)
+        h4, ldj4 = self.l3(h3,params)
 
         logdet = ldj1+ldj2+ldj3+ldj4
 
@@ -121,37 +121,42 @@ class normalizing_flow(Model):
 
 
 if __name__ == '__main__':
-    train_mode = True
+    train_mode = False
 
     # Load data from target
-    data = np.random.uniform(size=(1000,1))
+    data = np.load('Training_source.npy')
     # Load data for parameters
-    params = np.random.uniform(size=(1000,30))
+    params = np.load('Training_stencil.npy')
+    
+    idx = np.arange(data.shape[0])
+    np.random.shuffle(idx)
+
+    train_data = data[idx[:500000]]
+    train_params = params[idx[:500000]]
+
+    test_data = data[idx[500000:]]
+    test_params = params[idx[500000:]]
 
     # Normalizing flow training
-    flow_model = normalizing_flow(data,params)
-    pre_samples = flow_model.sample(1000,params).numpy()
-    
+    flow_model = normalizing_flow(train_data,train_params)
+    pre_samples = flow_model.sample(test_data.shape[0],test_params).numpy()
+   
     if train_mode:
         flow_model.train_model()
     else:
         flow_model.load_weights('./checkpoints/my_checkpoint')
 
-    samples = flow_model.sample(1000,params).numpy()
+    samples = flow_model.sample(test_data.shape[0],test_params).numpy()
 
     plt.figure()
-    plt.scatter(data[:,0],data[:,1],label='Target')
-    plt.scatter(pre_samples[:,0],pre_samples[:,1],label='Before training')
+    plt.hist(test_data[:,0],label='Target',density=True)
+    plt.hist(pre_samples[:,0],label='Before training', density=True)
     plt.legend()
 
 
     plt.figure()
-    plt.scatter(data[:,0],data[:,1],label='Target')
-    plt.scatter(samples[:,0],samples[:,1],label='Generated')
+    plt.hist(data[:,0],label='Target',density=True)
+    plt.hist(samples[:,0],label='Generated',density=True)
     plt.legend()
     plt.show()
-
-
-    exit()
-
     
