@@ -137,6 +137,12 @@ if __name__ == '__main__':
     test_data = data[idx[500000:]]
     test_params = params[idx[500000:]]
 
+    # Scaling makes it easier to train
+    from sklearn.preprocessing import StandardScaler
+    scaler = StandardScaler()
+    train_data = scaler.fit_transform(train_data)
+    test_data = scaler.transform(test_data)
+
     # Normalizing flow training
     flow_model = normalizing_flow(train_data,train_params)
     pre_samples = flow_model.sample(test_data.shape[0],test_params).numpy()
