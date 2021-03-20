@@ -14,7 +14,7 @@ from flow_layers import real_nvp
 
 #Build the model which does basic map of inputs to coefficients
 class normalizing_flow(Model):
-    def __init__(self,data):
+    def __init__(self,data,loss='kl'):
         super(normalizing_flow, self).__init__()
 
         self.dim = data.shape[1]
@@ -29,6 +29,9 @@ class normalizing_flow(Model):
 
         # Training optimizer
         self.train_op = tf.keras.optimizers.Adam(learning_rate=0.0001)
+
+        # Loss function
+        self.loss_function = loss
 
     @tf.function
     def call(self, x):
@@ -59,18 +62,31 @@ class normalizing_flow(Model):
 
     # perform gradient descent
     def network_learn(self,x):
-        with tf.GradientTape() as tape:
-            tape.watch(self.trainable_variables)
-            _, neg_ll = self.call(x)
-            g = tape.gradient(neg_ll, self.trainable_variables)
 
-        self.train_op.apply_gradients(zip(g, self.trainable_variables))
+        if self.loss_function == 'kl':
+            with tf.GradientTape() as tape:
+                tape.watch(self.trainable_variables)
+                _, neg_ll = self.call(x)
+                g = tape.gradient(neg_ll, self.trainable_variables)
+
+            self.train_op.apply_gradients(zip(g, self.trainable_variables))
+        
+        elif self.loss_function == 'w11':
+
+            with tf.GradientTape() as tape:
+                tape.watch(self.trainable_variables)
+                gen_samples, _ = self.call(x)
+                z = tf.random.normal(shape=(x.shape[0],x.shape[1]))
+                w11_metric = tf.reduce_sum(tf.math.square(gen_samples - z))
+                g = tape.gradient(w11_metric, self.trainable_variables)
+
+            self.train_op.apply_gradients(zip(g, self.trainable_variables))
 
     # Train the model
     def train_model(self):
         plot_iter = 0
         stop_iter = 0
-        patience = 10
+        patience = 100
         best_valid_loss = np.inf # Some large number 
 
         self.num_batches = 10
@@ -83,7 +99,7 @@ class normalizing_flow(Model):
         self.train_batch_size = int(self.ntrain/self.num_batches)
         self.valid_batch_size = int(self.ntrain/self.num_batches)
         
-        for i in range(2000):
+        for i in range(300):
             # Training loss
             print('Training iteration:',i)
             
@@ -101,7 +117,7 @@ class normalizing_flow(Model):
             # Check early stopping criteria
             if valid_loss < best_valid_loss:
                 
-                print('Improved validation negative log likelihood from:',best_valid_loss,' to:', valid_loss)
+                print('Improved validation loss from:',best_valid_loss,' to:', valid_loss)
                 
                 best_valid_loss = valid_loss
 
@@ -109,7 +125,7 @@ class normalizing_flow(Model):
                 
                 stop_iter = 0
             else:
-                print('Validation negative log likelihood (no improvement):',valid_loss)
+                print('Validation loss (no improvement):',valid_loss)
                 stop_iter = stop_iter + 1
 
             if stop_iter == patience:
@@ -126,7 +142,7 @@ if __name__ == '__main__':
     data = np.random.multivariate_normal(mean, cov, 1000)
     
     # Normalizing flow training
-    flow_model = normalizing_flow(data)
+    flow_model = normalizing_flow(data,loss='w11')
     flow_model.build(input_shape=(1,2))
     pre_samples = flow_model.sample(1000).numpy()
     
