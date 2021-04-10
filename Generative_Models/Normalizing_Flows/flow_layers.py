@@ -201,6 +201,82 @@ class real_nvp(layers.Layer):
 
         return x
 
+
+
+""" 
+Build a neural spline flow layer
+"""
+class neural_spline_flow(layers.Layer):
+    def __init__(self,scale_dim,B,K=10,shuffle=False):
+        super(real_nvp, self).__init__()
+
+        self.scale_dim = scale_dim
+        self.shuffle = shuffle
+        self.B = B
+        self.K = K
+
+
+    def build(self,input_shape): # Only needed when shuffling
+        self.idx = tf.random.shuffle(tf.range(input_shape[-1]))
+        self.unran_idx = tf.argsort(self.idx)
+
+        self.total_dim = input_shape[-1]
+        self.transform_dim = self.total_dim-self.scale_dim
+
+        # Define flow architecture for layer
+        xavier=tf.keras.initializers.GlorotUniform()
+        
+        self.nsp_0 = tf.keras.layers.Dense(50,activation='tanh')
+        self.nsp_1 = tf.keras.layers.Dense(50,activation='tanh')
+        
+        self.nsp_2_w = tf.keras.layers.Dense(self.transform_dim*self.K,activation='linear') # needs additional softmax
+        self.nsp_2_h = tf.keras.layers.Dense(self.transform_dim*self.K,activation='linear') # needs additional softmax
+        self.nsp_2_d = tf.keras.layers.Dense(self.transform_dim*(self.K-1),activation='linear') # needs additional softplus
+
+    @tf.function
+    def call(self,x):
+
+        if self.shuffle:
+            x = tf.transpose(tf.gather(tf.transpose(x),self.idx))
+
+        total_dim = tf.shape(x)[-1] # Check syntax
+        zd = x[:,0:self.scale_dim]
+
+        hh_ = self.nsp_0(zd)
+        hh_ = self.nsp_1(hh_)
+
+        theta_w = 2.0*self.B*self.nsp_2_w(hh_)
+        theta_w = tf.reshape(theta_w,[-1,self.transform_dim,self.K])
+        theta_w = tf.nn.softmax(theta_w,axis=-1)
+
+        theta_h = 2.0*self.B*self.nsp_2_h(hh_)
+        theta_h = tf.reshape(theta_h,[-1,self.transform_dim,self.K])
+        theta_h = tf.nn.softmax(theta_h,axis=-1)
+
+        theta_d = self.nsp_2_d(hh_)
+        theta_d = tf.reshape(theta_d,[-1,self.transform_dim,self.K-1])
+        theta_d = tf.math.softplus(theta_d)
+
+        binx_ = tf.math.cumsum(theta_w,axis=-1)
+        biny_ = tf.math.cumsum(theta_h,axis=-1)
+
+
+        return tf.concat([zd,zD], axis=1), tf.math.log(tf.abs(tf.exp(mu)))
+
+    @tf.function
+    def invert(self,z):
+        xd = z[:,0:self.scale_dim]
+        mu = self.scale(xd)
+
+        xD = (z[:,self.scale_dim:] - self.translate(xd))/(tf.exp(mu))
+
+        x = tf.concat([xd,xD], axis=1)
+
+        if self.shuffle:
+            x = tf.transpose(tf.gather(tf.transpose(x),self.unran_idx))
+
+        return x
+
 if __name__ == '__main__':
     print('Some testing')
 
