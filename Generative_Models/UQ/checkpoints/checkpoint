@@ -1,0 +1,2 @@
+model_checkpoint_path: "variational_checkpoint"
+all_model_checkpoint_paths: "variational_checkpoint"
