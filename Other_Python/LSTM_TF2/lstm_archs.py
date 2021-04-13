@@ -23,11 +23,13 @@ from nolds import lyap_r
 
 #Build the model which does basic map of inputs to coefficients
 class standard_lstm(Model):
-    def __init__(self,data,lce=False):
+    def __init__(self,data,lce=False,multistep=False):
         super(standard_lstm, self).__init__()
 
         # Is this an LCE based LSTM
         self.lce = lce
+        self.multistep = multistep
+        self.num_multistep = 5
 
         # Set up the data for the LSTM
         self.data_tsteps = np.shape(data)[0]
@@ -38,16 +40,33 @@ class standard_lstm(Model):
 
         # Need to make minibatches
         self.seq_num = 1
-        self.total_size = np.shape(data)[0]-int(self.seq_num) # Limit of sampling
 
-        input_seq = np.zeros(shape=(self.total_size,self.seq_num,self.state_len))  #[samples,n_inputs,state_len]
-        output_seq = np.zeros(shape=(self.total_size,self.state_len)) #[samples,n_outputs,state_len]
+        if not self.multistep:
+            self.total_size = np.shape(data)[0]-int(self.seq_num) # Limit of sampling
 
-        snum = 0
-        for t in range(0,self.total_size):
-            input_seq[snum,:,:] = self.data[None,t:t+self.seq_num,:]
-            output_seq[snum,:] = self.data[None,t+self.seq_num,:]        
-            snum = snum + 1
+            input_seq = np.zeros(shape=(self.total_size,self.seq_num,self.state_len))  #[samples,n_inputs,state_len]
+            output_seq = np.zeros(shape=(self.total_size,self.state_len)) #[samples,n_outputs,state_len]
+
+            snum = 0
+            for t in range(0,self.total_size):
+                input_seq[snum,:,:] = self.data[None,t:t+self.seq_num,:]
+                output_seq[snum,:] = self.data[None,t+self.seq_num,:]        
+                snum = snum + 1
+
+        else:
+            self.total_size = np.shape(data)[0]- self.seq_num - self.num_multistep # Limit of sampling
+
+            input_seq = np.zeros(shape=(self.total_size,self.seq_num,self.state_len))  #[samples,n_inputs,state_len]
+            output_seq = np.zeros(shape=(self.total_size,self.num_multistep, self.state_len)) #[samples,n_outputs,state_len]
+
+            snum = 0
+            for t in range(0,self.total_size):
+                input_seq[snum,:,:] = self.data[None,t:t+self.seq_num,:]
+                for step in range(self.num_multistep):
+                    output_seq[snum,step,:] = self.data[None,t+self.seq_num+step,:]        
+                
+                snum = snum + 1
+
 
         # Shuffle dataset
         idx = np.arange(snum)
@@ -93,8 +112,26 @@ class standard_lstm(Model):
     
     # Regular MSE
     def get_loss(self,X,Y):
-        op=self.call(X)
-        return tf.reduce_mean(tf.math.square(op-Y))
+
+        if not self.multistep:
+            
+            op=self.call(X)
+            return tf.reduce_mean(tf.math.square(op-Y))
+        
+        else:
+            for i in range(self.num_multistep):
+                op = self.call(X)
+                op = tf.expand_dims(op,axis=1)
+                X = tf.concat([X,op],axis=1)
+                X = X[:,1:]
+
+                if i == 0:
+                    Y_pred = op
+                else:
+                    Y_pred = tf.concat([Y_pred,op],axis=1)
+
+            return tf.reduce_mean(tf.math.square(Y_pred-Y))
+
 
     # get gradients - regular
     def get_grad(self,X,Y):
@@ -186,8 +223,20 @@ class standard_lstm(Model):
                 output_batch = self.output_seq_valid[batch*self.valid_batch_size:(batch+1)*self.valid_batch_size]
 
                 valid_loss = valid_loss + self.get_loss(input_batch,output_batch).numpy()
-                predictions = self.call(self.input_seq_valid)
-                valid_r2 = valid_r2 + coeff_determination(predictions,self.output_seq_valid)
+
+                if self.multistep:
+                    X = self.input_seq_valid
+                    
+                    for i in range(self.num_multistep):
+                        predictions = self.call(X)
+                        predictions = tf.expand_dims(predictions,axis=1)
+                        X = tf.concat([X,predictions],axis=1)
+                        X = X[:,1:]
+
+                    valid_r2 = valid_r2 + coeff_determination(predictions,self.output_seq_valid[:,-1,:])
+                else:
+                    predictions = self.call(self.input_seq_valid)
+                    valid_r2 = valid_r2 + coeff_determination(predictions,self.output_seq_valid)
 
             valid_r2 = valid_r2/(batch+1)
 
@@ -202,6 +251,8 @@ class standard_lstm(Model):
 
                 if self.lce:
                     self.save_weights('./lce_checkpoints/my_checkpoint')
+                elif self.multistep:
+                    self.save_weights('./multistep_checkpoints/my_checkpoint')
                 else:
                     self.save_weights('./checkpoints/my_checkpoint')
                 
@@ -213,18 +264,14 @@ class standard_lstm(Model):
 
             if stop_iter == patience:
                 break
-                
-        # Check accuracy on test
-        predictions = self.call(self.input_seq_test)
-        print('Test loss:',self.get_loss(self.input_seq_test,self.output_seq_test).numpy())
-        r2 = coeff_determination(predictions,self.output_seq_test)
-        print('Test R2:',r2)
-        r2_iter = 0
+
 
     # Load weights
     def restore_model(self):
         if self.lce:
             self.load_weights(dir_path+'/lce_checkpoints/my_checkpoint') # Load pretrained model
+        elif self.multistep:
+            self.load_weights(dir_path+'/multistep_checkpoints/my_checkpoint') # Load pretrained model
         else:
             self.load_weights(dir_path+'/checkpoints/my_checkpoint') # Load pretrained model
 
