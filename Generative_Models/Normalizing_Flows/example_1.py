@@ -71,7 +71,7 @@ class normalizing_flow(Model):
 
             self.train_op.apply_gradients(zip(g, self.trainable_variables))
         
-        elif self.loss_function == 'w11':
+        elif self.loss_function == 'w11': # This is not correct - needs clustering etc
 
             with tf.GradientTape() as tape:
                 tape.watch(self.trainable_variables)

@@ -204,7 +204,7 @@ class real_nvp(layers.Layer):
 
 
 """ 
-Build a neural spline flow layer
+Build a neural spline flow layer - incomplete!!
 """
 class neural_spline_flow(layers.Layer):
     def __init__(self,scale_dim,B,K=10,shuffle=False):
