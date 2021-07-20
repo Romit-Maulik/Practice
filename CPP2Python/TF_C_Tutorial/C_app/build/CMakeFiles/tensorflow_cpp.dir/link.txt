@@ -1,0 +1,1 @@
+/usr/bin/c++  -O3 -DNDEBUG   CMakeFiles/tensorflow_cpp.dir/src/mwe.cpp.o CMakeFiles/tensorflow_cpp.dir/src/tf_utils.cpp.o  -o tensorflow_cpp  -L/usr/local/lib -Wl,-rpath,/usr/local/lib -ltensorflow 
