@@ -1,0 +1,39 @@
+data_paths:
+  cood_path: data/Z500/
+  da_testing_fields: data/Z500/Testing_snapshots.npy
+  pod_modes: data/Z500/POD_Modes.npy
+  save_path: results/Experiment_16/
+  subregions:
+  - data/subregions/Alaska_coarse.nc
+  - data/subregions/Midwest_coarse.nc
+  - data/subregions/NGreatPlains_coarse.nc
+  - data/subregions/Northeast_coarse.nc
+  - data/subregions/Northwest_coarse.nc
+  - data/subregions/SGreatPlains_coarse.nc
+  - data/subregions/Southeast_coarse.nc
+  - data/subregions/Southwest_coarse.nc
+  testing_coefficients: data/Z500/Testing_Coefficients.npy
+  testing_fields: data/Z500/Testing_snapshots.npy
+  training_coefficients: data/Z500/Training_Coefficients.npy
+  training_fields: data/Z500/Training_snapshots.npy
+  training_mean: data/Z500/Training_mean.npy
+hyperparameters:
+- 5000
+- 40
+- 15
+- 0.7
+- 365
+- 500
+- 10
+- 5
+- 1
+- 0
+- 0
+- 0
+operation_mode:
+  constrained_var: false
+  model_choice: BLSTM_REPEAT
+  perform_analyses: true
+  perform_var: true
+  test: true
+  train: true
