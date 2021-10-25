@@ -63,7 +63,7 @@ class parametric_real_nvp(layers.Layer):
 
         zD = x[:,self.scale_dim:]*tf.exp(mu) + self.translate(zd,params)
 
-        return tf.concat([zd,zD], axis =1), tf.math.log(tf.abs(tf.exp(mu)))
+        return tf.concat([zd,zD], axis =1), tf.math.log(tf.exp(tf.reduce_sum(mu)))
 
     @tf.function
     def invert(self,z,params):
@@ -90,13 +90,13 @@ class scalar_real_nvp(layers.Layer):
         # Define flow architecture for layer
         xavier=tf.keras.initializers.GlorotUniform()
         
-        self.mu_0 = tf.keras.layers.Dense(50,activation='sigmoid')
-        self.mu_1 = tf.keras.layers.Dense(50,activation='sigmoid')
-        self.mu_2 = tf.keras.layers.Dense(1,activation='sigmoid')
+        self.mu_0 = tf.keras.layers.Dense(100,activation='relu')
+        self.mu_1 = tf.keras.layers.Dense(100,activation='relu')
+        self.mu_2 = tf.keras.layers.Dense(1,activation='linear')
 
-        self.nu_0 = tf.keras.layers.Dense(50,activation='sigmoid')
-        self.nu_1 = tf.keras.layers.Dense(50,activation='sigmoid')
-        self.nu_2 = tf.keras.layers.Dense(1,activation='sigmoid')
+        self.nu_0 = tf.keras.layers.Dense(100,activation='relu')
+        self.nu_1 = tf.keras.layers.Dense(100,activation='relu')
+        self.nu_2 = tf.keras.layers.Dense(1,activation='linear')
 
     @tf.function
     def scale(self,x):
@@ -122,14 +122,14 @@ class scalar_real_nvp(layers.Layer):
         mu = self.scale(params)
         z = x*tf.exp(mu) + self.translate(params)
 
-        return z, tf.math.log(tf.abs(tf.exp(mu)))
+        return z, tf.math.log(tf.exp(tf.reduce_sum(mu)))
 
     @tf.function
     def invert(self,z,params):
-        
+
         mu = self.scale(params)
         x = (z - self.translate(params))/(tf.exp(mu))
-        
+                
         return x
 
 
@@ -146,13 +146,13 @@ class real_nvp(layers.Layer):
         # Define flow architecture for layer
         xavier=tf.keras.initializers.GlorotUniform()
         
-        self.mu_0 = tf.keras.layers.Dense(50,activation='sigmoid')
-        self.mu_1 = tf.keras.layers.Dense(50,activation='sigmoid')
-        self.mu_2 = tf.keras.layers.Dense(1,activation='sigmoid')
+        self.mu_0 = tf.keras.layers.Dense(50,activation='relu')
+        self.mu_1 = tf.keras.layers.Dense(50,activation='relu')
+        self.mu_2 = tf.keras.layers.Dense(1,activation='linear')
 
-        self.nu_0 = tf.keras.layers.Dense(50,activation='sigmoid')
-        self.nu_1 = tf.keras.layers.Dense(50,activation='sigmoid')
-        self.nu_2 = tf.keras.layers.Dense(1,activation='sigmoid')
+        self.nu_0 = tf.keras.layers.Dense(50,activation='relu')
+        self.nu_1 = tf.keras.layers.Dense(50,activation='relu')
+        self.nu_2 = tf.keras.layers.Dense(1,activation='linear')
 
     def build(self,input_shape): # Only needed when shuffling
         self.idx = tf.random.shuffle(tf.range(input_shape[-1]))
@@ -185,7 +185,7 @@ class real_nvp(layers.Layer):
 
         zD = x[:,self.scale_dim:]*tf.exp(mu) + self.translate(zd)
 
-        return tf.concat([zd,zD], axis=1), tf.math.log(tf.abs(tf.exp(mu)))
+        return tf.concat([zd,zD], axis=1), tf.math.log(tf.exp(tf.reduce_sum(mu)))
 
     @tf.function
     def invert(self,z):
