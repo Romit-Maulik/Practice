@@ -79,7 +79,7 @@ class normalizing_flow(Model):
         patience = 100
         best_valid_loss = np.inf # Some large number 
 
-        self.num_batches = 200
+        self.num_batches = 10
         self.ntrain = int(0.7*self.data.shape[0])
         self.nvalid = self.data.shape[0] - int(0.7*self.data.shape[0])
 
@@ -89,7 +89,7 @@ class normalizing_flow(Model):
         self.train_batch_size = int(self.ntrain/self.num_batches)
         self.valid_batch_size = int(self.ntrain/self.num_batches)
         
-        for i in range(300):
+        for i in range(1000):
             # Training loss
             print('Training iteration:',i)
             
@@ -127,7 +127,7 @@ if __name__ == '__main__':
 
     # Generate some data from a weird distribution
     from sklearn.datasets import make_moons
-    data = make_moons(n_samples=1000,noise=0.2)[0]
+    data = make_moons(n_samples=1000,noise=0.1)[0]
   
     # Normalizing flow training
     flow_model = normalizing_flow(data)
@@ -139,7 +139,7 @@ if __name__ == '__main__':
     else:
         flow_model.load_weights('./checkpoints/my_checkpoint')
 
-    samples = flow_model.sample(1000).numpy()
+    samples = flow_model.sample(4000).numpy()
 
     # plt.figure()
     # plt.scatter(data[:,0],data[:,1],label='Target')
