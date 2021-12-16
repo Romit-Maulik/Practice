@@ -1,6 +1,7 @@
 using DifferentialEquations, Flux, DiffEqFlux
 using Plots, NPZ
 using IterTools: ncycle
+using BSON: @save, @load
 
 true_data = npzread("data.npy")[1:20:4000,:]
 data_len = size(true_data)[1]
@@ -31,21 +32,21 @@ sol = solve(prob, Tsit5())
 plot(sol)
 savefig("Initial_NN_ODE.png")
 
-function predict_ode(time_batch)
-  tmp_prob = remake(prob, p = p)
+function predict_ode(state_batch,time_batch)
+  tmp_prob = remake(prob; p = p,u=state_batch[1])
   pred = Array(solve(tmp_prob, Tsit5(), saveat = time_batch))
   return pred
 end
 
 function loss_ode(state_batch,time_batch)
-    pred = predict_ode(time_batch)
+    pred = predict_ode(state_batch,time_batch)
     loss = sum(abs2, state_batch-pred)
     return loss
 end
 
-k = 200
+k = 20
 train_loader = Flux.Data.DataLoader((transpose(state_data), tsteps), batchsize = k)
-numEpochs = 600
+numEpochs = 200
 losses=[]
 cb() = begin
   
@@ -53,7 +54,7 @@ cb() = begin
   push!(losses, l)
   @show l
 
-  pred = predict_ode(tsteps)
+  pred = predict_ode(transpose(state_data),tsteps)
   
   plt = plot(x_data,hcat(transpose(pred),state_data), 
     line=(4, [:solid :solid :dash :dash]), ylim = (-6, 6),
@@ -67,6 +68,14 @@ end
 
 opt=ADAM(0.01)
 Flux.train!(loss_ode, Flux.params(p), ncycle(train_loader,numEpochs), opt, cb=Flux.throttle(cb, 10))
+
+my_nn_final = re(p)
+@save "mymodel.bson" my_nn_final
+
+# Inference
+@load "mymodel.bson" my_nn_final
+p, re = Flux.destructure(my_nn_final)
+
 
 prob_final = ODEProblem(right_hand_side, u0, tspan, p)
 sol_final = solve(prob_final,Tsit5())
