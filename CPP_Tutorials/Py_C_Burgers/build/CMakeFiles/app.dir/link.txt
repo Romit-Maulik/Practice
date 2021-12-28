@@ -1,0 +1,1 @@
+/usr/bin/c++  -O3 -DNDEBUG   CMakeFiles/app.dir/app.cpp.o  -o app  -Wl,-rpath,/home/rmlans/miniconda3/envs/tf2_env/lib /home/rmlans/miniconda3/envs/tf2_env/lib/libpython3.6m.so 
