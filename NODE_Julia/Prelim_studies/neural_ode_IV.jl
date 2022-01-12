@@ -48,6 +48,12 @@ k = 20
 train_loader = Flux.Data.DataLoader((transpose(state_data), tsteps), batchsize = k)
 numEpochs = 200
 losses=[]
+
+# test_batch = iterate(train_loader)
+# print(check[1][2])
+# print(size(test_batch[1][1]))
+# loss_ode(test_batch[1][1],test_batch[1][2])
+
 cb() = begin
   
   l=loss_ode(transpose(state_data), tsteps)
