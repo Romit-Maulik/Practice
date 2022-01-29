@@ -5,7 +5,7 @@ if [ "$1" == "-h" ]; then
     echo "Note that csv file is assumed to have only one dependent variable (as last column)"
     echo "csv file should also have header with variable names"
     echo ""
-    echo "Requires python 3.6.8, tensorflow 1.14, numpy, scikit-learn, xgboost, pandas, matplotlib"
+    echo "Requires python>=3.8, tensorflow 2, numpy, scikit-learn, xgboost, pandas, matplotlib, seaborn"
     echo ""
     echo "Usage:"
     echo "bash fit_csv.sh csvfilename.csv num_folds"

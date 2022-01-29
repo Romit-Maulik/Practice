@@ -46,7 +46,7 @@ import math
 from sklearn.multioutput import MultiOutputRegressor
 
 import tensorflow as tf
-tf.set_random_seed(10)
+tf.random.set_seed(10)
 from tensorflow.keras import backend as K
 
 from tensorflow.keras.layers import Input, Dense
@@ -142,7 +142,7 @@ class Regression():
             model = self.regressors[model_type]
         else:
             tf.keras.backend.clear_session()
-            tf.reset_default_graph()
+            # tf.reset_default_graph()
             nunits = 200
             # design network
             model = Sequential()

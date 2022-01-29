@@ -1,3 +1,0 @@
-/home/rmlans/Desktop/Practice/Py_C_Burgers/build/CMakeFiles/rebuild_cache.dir
-/home/rmlans/Desktop/Practice/Py_C_Burgers/build/CMakeFiles/app.dir
-/home/rmlans/Desktop/Practice/Py_C_Burgers/build/CMakeFiles/edit_cache.dir

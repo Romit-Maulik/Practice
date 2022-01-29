@@ -9,6 +9,7 @@ from scipy.stats import mode
 import shap
 from sklearn import ensemble
 from sklearn.metrics import r2_score
+from sklearn.inspection import PartialDependenceDisplay
 
 import sys
 np.set_printoptions(threshold=sys.maxsize)
@@ -230,3 +231,21 @@ if __name__ == '__main__':
     plt.tight_layout()
     plt.savefig('importances/SHAP_importances.png',bbox_inches='tight')
     plt.close()
+
+    # Make partial dependence plots
+    importances = np.sum(importance_tracker,axis=0)/int(args.num_folds)
+    indices = np.argsort(importances)[::-1]
+    features = [indices[0],indices[1],(indices[0],indices[1])]
+
+    PartialDependenceDisplay.from_estimator(model, inp_df, features)
+    fig = plt.gcf()
+    fig.set_size_inches(14, 4)
+    fig.tight_layout()
+    plt.savefig('PDP_Plot.png')
+
+    features = [indices[0],indices[1]]
+    PartialDependenceDisplay.from_estimator(model, inp_df, features,  kind='both')
+    fig = plt.gcf()
+    fig.set_size_inches(14, 4)
+    fig.tight_layout()
+    plt.savefig('PDP_Plot_Individual.png')
