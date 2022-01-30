@@ -411,7 +411,7 @@ class Original_LSTM_grid_layer(tf.keras.layers.Layer):
             # For each grid input
             for j in range(self.num_dof):
 
-                temp_input_dim = tf.convert_to_tensor(inputs_list)[j,:,i]
+                temp_input_dim = tf.convert_to_tensor(inputs_list[j])[:,i]
                 inputs = tf.concat([temp_input_dim,h_list[j]],axis=-1)
 
                 gu = tf.nn.sigmoid(tf.matmul(inputs,self.wu_list[j]) + self.bu_list[j])

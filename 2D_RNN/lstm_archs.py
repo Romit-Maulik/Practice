@@ -214,11 +214,10 @@ class grid_lstm(Model):
         for i in range(len(self.output_idx)):
         
             # Call intermediate LSTM
-            H_ = tf.expand_dims(H_,axis=1)
-            H_temp = tf.repeat(H_,repeats=self.resolution_list[self.output_idx[i]]*self.output_horizon,axis=1)
-            M_ = tf.expand_dims(M_,axis=1)
-            M_temp = tf.repeat(M_,repeats=self.resolution_list[self.output_idx[i]]*self.output_horizon,axis=1)
-
+            H_temp = tf.expand_dims(H_,axis=1)
+            H_temp = tf.repeat(H_temp,repeats=self.resolution_list[self.output_idx[i]]*self.output_horizon,axis=1)
+            M_temp = tf.expand_dims(M_,axis=1)
+            M_temp = tf.repeat(M_temp,repeats=self.resolution_list[self.output_idx[i]]*self.output_horizon,axis=1)
 
 
             # Retrieve layers
@@ -237,9 +236,15 @@ class grid_lstm(Model):
     
     # Regular MSE
     @tf.function
-    def get_loss(self,X,Y):            
+    def get_loss(self,X,Y):
         op=self.call(X)
-        return tf.reduce_mean(tf.math.square(op-Y))
+
+        loss = tf.zeros(shape=(1,), dtype=tf.dtypes.float32, name=None)
+
+        for i in range(len(self.output_idx)):
+            loss = loss + tf.reduce_mean(tf.math.square(op[i]-Y[i]))
+
+        return tf.reduce_mean(loss)
 
 
     # get gradients
@@ -262,7 +267,7 @@ class grid_lstm(Model):
         plot_iter = 0
         stop_iter = 0
         patience = 10
-        best_valid_loss = 999999.0 # Some large number 
+        best_valid_loss = 1.0e16
 
         self.num_batches_train = int(self.num_train/batch_size)
         self.num_batches_valid = int(self.num_valid/batch_size)
@@ -273,11 +278,11 @@ class grid_lstm(Model):
             
             for batch in range(self.num_batches_train):
 
-                input_batch = [self.input_data_train_list[i][batch*batch_size:(batch+1)*batch_size] for i in range(len(self.input_idx))]
-                output_batch = [self.output_data_train_list[i][batch*batch_size:(batch+1)*batch_size] for i in range(len(self.output_idx))]
+                input_batch = [self.input_data_train_list[i][batch*batch_size:(batch+1)*batch_size].astype('float32') for i in range(len(self.input_idx))]
+                output_batch = [self.output_data_train_list[i][batch*batch_size:(batch+1)*batch_size].astype('float32') for i in range(len(self.output_idx))]
 
-                input_batch = tf.convert_to_tensor(input_batch)
-                output_batch = tf.convert_to_tensor(output_batch)
+                # input_batch = tf.convert_to_tensor(input_batch)
+                # output_batch = tf.convert_to_tensor(output_batch)
 
                 self.network_learn(input_batch,output_batch)
 
@@ -286,11 +291,11 @@ class grid_lstm(Model):
             valid_loss = 0.0
 
             for batch in range(self.num_batches_valid):
-                input_batch = [self.input_data_valid_list[i][batch*batch_size:(batch+1)*batch_size] for i in range(len(self.input_idx))]
-                output_batch = [self.output_data_valid_list[i][batch*batch_size:(batch+1)*batch_size] for i in range(len(self.output_idx))]
+                input_batch = [self.input_data_valid_list[i][batch*batch_size:(batch+1)*batch_size].astype('float32') for i in range(len(self.input_idx))]
+                output_batch = [self.output_data_valid_list[i][batch*batch_size:(batch+1)*batch_size].astype('float32') for i in range(len(self.output_idx))]
 
-                input_batch = tf.convert_to_tensor(input_batch)
-                output_batch = tf.convert_to_tensor(output_batch)
+                # input_batch = tf.convert_to_tensor(input_batch)
+                # output_batch = tf.convert_to_tensor(output_batch)
             
 
                 valid_loss = valid_loss + self.get_loss(input_batch,output_batch).numpy()
@@ -332,7 +337,7 @@ class grid_lstm(Model):
         self.data_list_test = []
         self.snum_list_test = []
         
-        for i in self.num_dof:
+        for i in range(self.num_dof):
             
             preproc_pipeline = self.prepoc_list[i]
             data = preproc_pipeline.transform(test_data[i])
@@ -360,10 +365,10 @@ class grid_lstm(Model):
 
 
         self.output_data_list_test = []
-        for i in output_idx:
+        for i in self.output_idx:
             
             state_len = self.state_len_list[i]
-            data = self.data_list[i]
+            data = self.data_list_test[i]
 
             seq_num_ip = self.resolution_list[i]*self.input_horizon
             seq_num_op = self.resolution_list[i]*self.output_horizon
@@ -398,21 +403,26 @@ class grid_lstm(Model):
         # # print(op_list)
 
         # Make predictions
+        # Inputs
+        Xtest = [self.input_data_list_test[i] for i in range(len(self.input_idx))]
+        # Output
+        Ypred = self.call(Xtest)
+
         self.output_data_list_pred = []
-        for i in range(snum):
-            # Onput
-            Xtest = [self.input_data_train_list[i][snum:snum+1] for i in range(len(self.input_idx))]
-            # Output
-            Ypred = self.call(Xtest)
-            # Rescale       
-            self.output_data_list_pred.append(Ypred)
+        for i in range(len(self.output_idx)):
+            self.output_data_list_pred.append(Ypred[i])
 
+        # Rescale       
+        for j in range(len(self.output_idx)):
+            preproc_pipeline = self.prepoc_list[self.output_idx[j]]
 
-        for i in range(snum):
-            for j in self.output_idx:
-                preproc_pipeline = self.prepoc_list[j]
-                self.output_data_list_test[i][j] = preproc_pipeline.inverse_transform(self.output_data_list_test[i][j])
-                self.output_data_list_pred[i][j] = preproc_pipeline.inverse_transform(self.output_data_list_pred[i][j].numpy())
+            temp_data = self.output_data_list_test[j].reshape(snum*self.output_horizon,-1)
+            temp_data = preproc_pipeline.inverse_transform(temp_data)
+            self.output_data_list_test[j] = temp_data.reshape(snum,self.output_horizon,-1)
+
+            temp_data = self.output_data_list_pred[j].numpy().reshape(snum*self.output_horizon,-1)
+            temp_data = preproc_pipeline.inverse_transform(temp_data)
+            self.output_data_list_pred[j] = temp_data.reshape(snum,self.output_horizon,-1)
 
         return self.output_data_list_test, self.output_data_list_pred
 
