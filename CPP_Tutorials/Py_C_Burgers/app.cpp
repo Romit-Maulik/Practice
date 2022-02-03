@@ -182,21 +182,23 @@ void analyse_data(PyObject *panalyses_func, double *u)
   PyArray_ENABLEFLAGS((PyArrayObject*)array_1d, NPY_ARRAY_OWNDATA); // Deallocate array_1d
   // Py_DECREF(array_1d);
 
+  
   // Printing out values of the SVD eigenvectors of the first and second modes for each field DOF
-  double* c_out = reinterpret_cast<double*>(PyArray_DATA(pValue));
   for (int i = 0; i < 10; ++i) // Only printing 10 out of NX for checking the order of allocation in arrays
   {
-    std::cout << "First mode value: " << (*(c_out+i)) << std::endl;
+    double* current = (double*) PyArray_GETPTR2(pValue, 0, i); // row 0, column i
+    std::cout << "First mode value: " << *current << std::endl;
   }
 
   for (int i = 0; i < 10; ++i) // Only printing 10 out of NX for checking the order of allocation in arrays
   {
-    std::cout << "Second mode value: " << (*(c_out+NX+i)) << std::endl;
+    double* current = (double*) PyArray_GETPTR2(pValue, 1, i); // row 0, column i
+    std::cout << "First mode value: " << *current << std::endl;
   }
 
   Py_DECREF(pValue);
 
   // Null and delete the pointer you allocated to get data from python
-  c_out = nullptr;
-  delete[] c_out;
+  // c_out = nullptr;
+  // delete[] c_out;
 }
