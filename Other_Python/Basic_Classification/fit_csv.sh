@@ -47,9 +47,9 @@ else
             fi
 
             python make_folds.py $f $2
-            python run_regressors.py
+            python run_classifiers.py
             python parse_results.py $2
-            python RFR.py $f $2
+            python RFC.py $f $2
 
             mv $f "${folder_name}/"
             mv folds "${folder_name}/"

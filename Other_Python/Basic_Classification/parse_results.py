@@ -2,7 +2,7 @@ import numpy as np
 np.random.seed(5)
 import matplotlib.pyplot as plt
 import argparse
-from run_regressors import Regression
+from run_classifiers import Classification
 
 parser = argparse.ArgumentParser(description='Parse results for all folds')
 parser.add_argument('num_folds', metavar='num_folds', type=str, help='csv data file path')
@@ -13,10 +13,10 @@ import os
 if not os.path.exists('metrics/'):
     os.mkdir('metrics/')
 
-reg_class = Regression(None,None,None,run_case=False)
-key_list = list(reg_class.regressors.keys())
+reg_class = Classification(None,None,None,run_case=False)
+key_list = list(reg_class.classifiers.keys())
 
-metric_list = ['r2','rho','evs','mae','rmse']
+metric_list = ['acc']
 num_methods = len(key_list)
 num_metrics = len(metric_list)
 
@@ -26,14 +26,9 @@ for fold in range(int(args.num_folds)):
     method = 0
     for key in key_list:
         fname = 'metric_'+key+'_'+f'{fold:02}'
-        temp_load = np.loadtxt('results/'+fname+'.csv',delimiter=',',usecols=[1,2,3,4,5],skiprows=1)
+        temp_load = np.loadtxt('results/'+fname+'.csv',delimiter=',',usecols=[1],skiprows=1)
 
-        metric_matrix[fold,method,0] = temp_load[0]
-        metric_matrix[fold,method,1] = temp_load[1]
-        metric_matrix[fold,method,2] = temp_load[2]
-        metric_matrix[fold,method,3] = temp_load[3]
-        metric_matrix[fold,method,4] = temp_load[4]
-
+        metric_matrix[fold,method,0] = temp_load
         method = method + 1
 
 # Box plots

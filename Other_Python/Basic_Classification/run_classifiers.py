@@ -16,13 +16,9 @@ from sklearn import ensemble
 from sklearn import linear_model
 from sklearn import svm
 from sklearn.preprocessing import PolynomialFeatures
-from sklearn.metrics import r2_score
-from sklearn.metrics import explained_variance_score
-from sklearn.metrics import mean_absolute_error
-from sklearn.metrics import mean_squared_error
-#from keras.models import Sequential
-#from keras.layers.core import Dense, Dropout, Activation
-#from keras.layers.advanced_activations import PReLU, SReLU, LeakyReLU
+from sklearn import neural_network
+from sklearn.metrics import accuracy_score
+import xgboost
 
 from sklearn.preprocessing import FunctionTransformer
 transformer = FunctionTransformer(func=np.log1p, inverse_func=np.expm1)
@@ -35,23 +31,9 @@ from sklearn.preprocessing import MinMaxScaler
 from sklearn.preprocessing import StandardScaler
 
 
-#from keras.layers import Input, Dense
-#from keras.models import Model
-#import keras.backend as K
-from sklearn.metrics import r2_score, mean_squared_error
 import sklearn.dummy
 import math
-from sklearn.multioutput import MultiOutputRegressor
-
-# Methods
-def mean_absolute_percentage_error(y_true, y_pred): 
-    y_true, y_pred = np.array(y_true), np.array(y_pred)
-    return np.mean(np.abs((y_true - y_pred) / y_true)) * 100
-
-def coeff_determination(y_pred, y_true): #Order of function inputs is important here        
-    SS_res =  K.sum(K.square( y_true-y_pred )) 
-    SS_tot = K.sum(K.square( y_true - K.mean(y_true) ) )
-    return ( 1 - SS_res/(SS_tot + K.epsilon()) )
+from sklearn.multioutput import MultiOutputClassifier
 
 os.environ['KMP_DUPLICATE_LIB_OK']='True'
 outputs = ['time']
@@ -60,7 +42,7 @@ fold = ['nfold', 'fold', 'id','percentage','nfold']
 PP_OUT_FLAG = True
 LOG_FLAG = False
 
-class Regression():
+class Classification():
 
     def __init__(self, trainFilename, testFilename, resultsDir, run_case=True):
         # assert len(trainFilenames) == len(testFilenames)
@@ -68,25 +50,27 @@ class Regression():
         #ntrees = 1000
         self.trainFilename = trainFilename
         self.testFilename = testFilename
-        self.regressors = {
-            'lm': MultiOutputRegressor(linear_model.LinearRegression()),
-            'rg': MultiOutputRegressor(linear_model.Ridge()),
-            'svm': MultiOutputRegressor(svm.SVR(kernel='rbf')),
-            'gp': MultiOutputRegressor(gaussian_process.GaussianProcessRegressor()),
-            'knn': MultiOutputRegressor(neighbors.KNeighborsRegressor(n_neighbors=5)),
-            'dt': MultiOutputRegressor(tree.DecisionTreeRegressor()),
-            'br': MultiOutputRegressor(ensemble.BaggingRegressor(n_jobs=-1)),
-            'etr': MultiOutputRegressor(ensemble.ExtraTreesRegressor(n_jobs=-1)),
-            'rfr': MultiOutputRegressor(ensemble.RandomForestRegressor(n_jobs=-1)),
-            'abr': MultiOutputRegressor(ensemble.AdaBoostRegressor()),
-            'gbr': MultiOutputRegressor(ensemble.GradientBoostingRegressor()),
+        self.classifiers = {
+            'svm': MultiOutputClassifier(svm.SVC(kernel='rbf')),
+            'gp': MultiOutputClassifier(gaussian_process.GaussianProcessClassifier()),
+            'knn': MultiOutputClassifier(neighbors.KNeighborsClassifier(n_neighbors=5)),
+            'dt': MultiOutputClassifier(tree.DecisionTreeClassifier()),
+            'br': MultiOutputClassifier(ensemble.BaggingClassifier(n_jobs=-1)),
+            'etr': MultiOutputClassifier(ensemble.ExtraTreesClassifier(n_jobs=-1)),
+            'rfr': MultiOutputClassifier(ensemble.RandomForestClassifier(n_jobs=-1)),
+            'abr': MultiOutputClassifier(ensemble.AdaBoostClassifier()),
+            'gbr': MultiOutputClassifier(ensemble.GradientBoostingClassifier()),
+            'xgb': MultiOutputClassifier(xgboost.XGBClassifier())
         }
 
-        if run_case:
+        if trainFilename is not None and testFilename is not None:
             self.load_data()
             self.preprocess_data()
-            for key in self.regressors.keys():
+            for key in self.classifiers.keys():
                 self.fit_model(key)
+        else:
+            print('Loading dummy classification class')
+
 
     def load_data(self):
         filename = self.trainFilename
@@ -112,13 +96,13 @@ class Regression():
         self.preproc_X = Pipeline([('stdscaler', StandardScaler()),('minmax', MinMaxScaler(feature_range=(-1, 1)))])
         self.preproc_y = Pipeline([('stdscaler', StandardScaler()),('minmax', MinMaxScaler(feature_range=(-1, 1)))])
         self.train_X_p = self.preproc_X.fit_transform(self.train_X)#.as_matrix()
-        self.train_y_p = self.preproc_y.fit_transform(self.train_y)#.as_matrix()
+        self.train_y_p = self.train_y
         self.test_X_p = self.preproc_X.transform(self.test_X)#.as_matrix()
-        self.test_y_p = self.preproc_y.transform(self.test_y)#.as_matrix()
+        self.test_y_p = self.test_y
 
     def build_model(self, model_type):
         start = time.time()
-        model = self.regressors[model_type]
+        model = self.classifiers[model_type]
         end = time.time()
         build_time = (end-start)
         return model, build_time
@@ -144,16 +128,11 @@ class Regression():
         for out_index in range(test_y.shape[1]):
             y_true = test_y[:,out_index]
             y_pred = test_yhat[:,out_index]
-            r2 = r2_score(y_true, y_pred) 
-            evs = explained_variance_score(y_true, y_pred) 
-            mae = mean_absolute_error(y_true, y_pred)
-            rmse = np.sqrt(mean_squared_error(y_true, y_pred))
-            rho = np.corrcoef(y_true, y_pred)[0][1]
-            # mape = mean_absolute_percentage_error(y_true, y_pred) 
-            result = [r2, rho, evs, mae, rmse]
+            acc = accuracy_score(y_true, y_pred) 
+            result = [acc]
             results.append(result)
         res_df = pd.DataFrame(results)
-        res_df.columns = ['r2','rho','evs', 'mae', 'rmse']
+        res_df.columns = ['acc']
         return(res_df)
 
     def fit_model(self, model_type):
@@ -168,7 +147,7 @@ class Regression():
             model, train_time = self.train_model(model, model_type)
                        
             test_yhat_p , inference_time = self.test_model(model)
-            test_yhat = self.preproc_y.inverse_transform(test_yhat_p)
+            test_yhat = test_yhat_p
             res_df = self.compute_metric(self.test_y,test_yhat)
             
             res_dict['build_time'] = build_time
@@ -207,5 +186,5 @@ if __name__ == '__main__':
         testFilename = trainFilename.replace('train', 'test')
         testFilenames.append(testFilename)
 
-        Regression(trainFilename, testFilename, resultsDir)
+        Classification(trainFilename, testFilename, resultsDir)
 

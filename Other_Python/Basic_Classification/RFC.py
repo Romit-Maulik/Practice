@@ -8,14 +8,15 @@ from sklearn.pipeline import Pipeline
 from scipy.stats import mode
 import shap
 from sklearn import ensemble
-from sklearn.metrics import r2_score
+from sklearn.metrics import accuracy_score
+from sklearn.inspection import PartialDependenceDisplay
 
 import sys
 np.set_printoptions(threshold=sys.maxsize)
 np.random.seed(10)
 
 
-class RFR_Class():
+class RFC_Class():
     def __init__(self, trainFilename, resultsDir, variable_names, fold_num):
         # assert len(trainFilenames) == len(testFilenames)
         self.resultsDir = resultsDir
@@ -26,7 +27,7 @@ class RFR_Class():
 
         self.load_data()
         self.preprocess_data()
-        self.model = ensemble.RandomForestRegressor()
+        self.model = ensemble.RandomForestClassifier()
 
         # Fit model
         self.model.fit(self.train_X_p,self.train_y_p)
@@ -47,21 +48,20 @@ class RFR_Class():
 
     def preprocess_data(self):
         self.preproc_X = Pipeline([('stdscaler', StandardScaler()),('minmax', MinMaxScaler(feature_range=(-1, 1)))])
-        self.preproc_y = Pipeline([('stdscaler', StandardScaler()),('minmax', MinMaxScaler(feature_range=(-1, 1)))])
         self.train_X_p = self.preproc_X.fit_transform(self.train_X)#.as_matrix()
-        self.train_y_p = self.preproc_y.fit_transform(self.train_y)#.as_matrix()
+        self.train_y_p = self.train_y
 
     def permutation_importances(self):
-        baseline = r2_score(self.model.predict(self.train_X_p),self.train_y_p)
+        baseline = accuracy_score(self.model.predict(self.train_X_p),self.train_y_p)
         imp = []
         temp_df = pd.DataFrame(data=self.train_X_p,columns=self.variable_names)
         for col in temp_df.columns:
             save = temp_df[col].copy()
             temp_df[col] = np.random.permutation(temp_df[col])
-            m = r2_score(self.model.predict(temp_df), self.train_y_p)
+            m = accuracy_score(self.model.predict(temp_df), self.train_y_p)
             temp_df[col] = save
             imp.append(baseline - m)
-        return np.array(imp)
+        return np.array(imp)/np.sum(np.array(imp))
 
     def importances_rankings(self):
 
@@ -83,13 +83,15 @@ class RFR_Class():
         # https://github.com/slundberg/shap/issues/153
         temp_dataframe = pd.DataFrame(data=self.train_X_p,columns=self.variable_names)
         shap_values = explainer.shap_values(self.train_X_p)
-        shap.save_html('importances/force_plots/Fold_'+str(self.fold_num)+'_force_plot.html',shap.force_plot(explainer.expected_value, shap_values, temp_dataframe))
 
-        plt.figure()
-        shap.summary_plot(shap_values, temp_dataframe,show=False)
-        plt.tight_layout()
-        plt.savefig('importances/summary_plots/Fold_'+str(self.fold_num)+'_summary_plot.png',bbox_inches='tight')
-        plt.close()
+        for i in range(len(shap_values)):
+            shap.save_html('importances/force_plots/Fold_'+str(self.fold_num)+'_force_plot_class_'+str(i)+'.html',shap.force_plot(explainer.expected_value[i], shap_values[i], temp_dataframe))
+
+            plt.figure()
+            shap.summary_plot(shap_values[i], temp_dataframe,show=False)
+            plt.tight_layout()
+            plt.savefig('importances/summary_plots/Fold_'+str(self.fold_num)+'_summary_plot_class'+str(i)+'.png',bbox_inches='tight')
+            plt.close()
 
 
 def plot_ensemble_rankings(importance_tracker, ranking_tracker, variable_names, num_folds):
@@ -168,7 +170,7 @@ if __name__ == '__main__':
     # Read data file 
     csv_df = pd.read_csv(args.csv_file,encoding = "ISO-8859-1")
     csv_df = csv_df.apply(pd.to_numeric, errors='coerce') # Non-numeric values converted to NaN
-    csv_df = csv_df.fillna(0.0)   
+    csv_df = csv_df.fillna(0.0)  
     # Record list of variables
     variable_names = csv_df.columns.tolist()[:-1]
 
@@ -192,7 +194,7 @@ if __name__ == '__main__':
     fold_num = 0
     for trainFilename in trainFiles:
         trainFilenames.append(trainFilename)
-        gbr_temp = RFR_Class(trainFilename, resultsDir, variable_names, fold_num)
+        gbr_temp = RFC_Class(trainFilename, resultsDir, variable_names, fold_num)
         importance, ranking = gbr_temp.importances_rankings()
 
         importance_tracker.append(importance)
@@ -206,15 +208,13 @@ if __name__ == '__main__':
 
     # Make SHAP rankings for consistency
     # (same syntax works for LightGBM, CatBoost, scikit-learn and spark models)
-    model = ensemble.RandomForestRegressor()
+    model = ensemble.RandomForestClassifier()
     # Load data
     out_df = csv_df.iloc[:,-1].values.reshape(-1,1)
     inp_df = csv_df.iloc[:,:-1] 
 
     preproc_X = Pipeline([('stdscaler', StandardScaler()),('minmax', MinMaxScaler(feature_range=(-1, 1)))])
-    preproc_y = Pipeline([('stdscaler', StandardScaler()),('minmax', MinMaxScaler(feature_range=(-1, 1)))])
     inp_df = preproc_X.fit_transform(inp_df)#.as_matrix()
-    out_df = preproc_y.fit_transform(out_df)#.as_matrix()
 
     # Fit model
     model.fit(inp_df,out_df)
@@ -230,3 +230,21 @@ if __name__ == '__main__':
     plt.tight_layout()
     plt.savefig('importances/SHAP_importances.png',bbox_inches='tight')
     plt.close()
+
+    # # Make partial dependence plots
+    # importances = np.sum(importance_tracker,axis=0)/int(args.num_folds)
+    # indices = np.argsort(importances)[::-1]
+    # features = [indices[0],indices[1],(indices[0],indices[1])]
+
+    # PartialDependenceDisplay.from_estimator(model, inp_df, features)
+    # fig = plt.gcf()
+    # fig.set_size_inches(14, 4)
+    # fig.tight_layout()
+    # plt.savefig('PDP_Plot.png')
+
+    # features = [indices[0],indices[1]]
+    # PartialDependenceDisplay.from_estimator(model, inp_df, features,  kind='both')
+    # fig = plt.gcf()
+    # fig.set_size_inches(14, 4)
+    # fig.tight_layout()
+    # plt.savefig('PDP_Plot_Individual.png')
