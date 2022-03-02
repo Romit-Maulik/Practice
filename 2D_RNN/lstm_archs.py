@@ -8,7 +8,7 @@ tf.random.set_seed(10)
 tf.keras.backend.set_floatx('float32')
 
 from tensorflow.keras import Model
-from detailed_layer import LSTM_encoder_layer, LSTM_grid_layer, Original_LSTM_grid_layer
+from detailed_layer import LSTM_grid_layer_v1, LSTM_grid_layer_v2, Original_LSTM_grid_layer
 import numpy as np
 np.random.seed(10)
 
@@ -50,8 +50,10 @@ class grid_lstm(Model):
         # Preprocess data
         for i in range(self.num_dof):
 
-            preproc_pipeline = Pipeline([('stdscaler', StandardScaler()),('minmax', MinMaxScaler(feature_range=(-1, 1)))])
-            self.data_list.append(preproc_pipeline.fit_transform(data[i]))
+            preproc_pipeline = Pipeline([('minmax', MinMaxScaler(feature_range=(-1, 1)))])
+            # preproc_pipeline = Pipeline([('standard', StandardScaler())])
+            temp = preproc_pipeline.fit_transform(data[i]).copy()
+            self.data_list[i] = temp
             self.prepoc_list.append(preproc_pipeline)
 
             # Set up the data for the LSTM
@@ -133,7 +135,6 @@ class grid_lstm(Model):
         # Construct network
         self.make_architecture()
 
-
         # Minibatch information
 
 
@@ -184,17 +185,25 @@ class grid_lstm(Model):
             self.repeater_list.append(tf.keras.layers.RepeatVector(self.state_len_list[self.output_idx[i]]))
                     
             self.output_lstm_list.append(
-                tf.keras.layers.LSTM(50,return_sequences=True,activation='relu'))
-            
-            self.output_layer_list.append(
-                tf.keras.layers.TimeDistributed(
-                    tf.keras.layers.Dense(
-                        self.state_len_list[self.output_idx[i]]
-                        )
+                tf.keras.layers.LSTM(10,
+                    return_sequences=True,
+                    activation='tanh',
+                    kernel_initializer='glorot_normal',
+                    kernel_regularizer=tf.keras.regularizers.L1(0.01)
                     )
                 )
+            
+            self.output_layer_list.append(
+                # tf.keras.layers.TimeDistributed(
+                    tf.keras.layers.Dense(
+                        self.state_len_list[self.output_idx[i]],
+                        kernel_initializer='glorot_normal',
+                        kernel_regularizer=tf.keras.regularizers.L1(0.01)
+                        )
+                    # )
+                )
 
-        self.train_op = tf.keras.optimizers.Adam(learning_rate=0.0001)
+        self.train_op = tf.keras.optimizers.Adam(learning_rate=0.01)
 
     
     # Running the model
@@ -243,9 +252,12 @@ class grid_lstm(Model):
 
         for i in range(len(self.output_idx)):
             loss = loss + tf.reduce_mean(tf.math.square(op[i]-Y[i]))
+            # loss = loss + self.output_lstm_list[i].losses
+            # loss = loss + self.output_layer_list[i].losses
 
-        return tf.reduce_mean(loss)
+        # loss = loss + self.encoder_layer.regularizer_loss()
 
+        return loss
 
     # get gradients
     @tf.function
@@ -266,7 +278,7 @@ class grid_lstm(Model):
     def train_model(self, batch_size, num_epochs):
         plot_iter = 0
         stop_iter = 0
-        patience = 10
+        patience = 20
         best_valid_loss = 1.0e16
 
         self.num_batches_train = int(self.num_train/batch_size)
@@ -276,6 +288,7 @@ class grid_lstm(Model):
             # Training loss
             print('Training iteration:',i)
             
+            train_loss = 0.0
             for batch in range(self.num_batches_train):
 
                 input_batch = [self.input_data_train_list[i][batch*batch_size:(batch+1)*batch_size].astype('float32') for i in range(len(self.input_idx))]
@@ -284,7 +297,12 @@ class grid_lstm(Model):
                 # input_batch = tf.convert_to_tensor(input_batch)
                 # output_batch = tf.convert_to_tensor(output_batch)
 
+                train_loss = train_loss + self.get_loss(input_batch,output_batch).numpy()
+
                 self.network_learn(input_batch,output_batch)
+
+            train_loss = train_loss/self.num_batches_train
+            print('Training loss:',train_loss)
 
 
             # Validation loss
@@ -317,7 +335,14 @@ class grid_lstm(Model):
                 stop_iter = stop_iter + 1
 
             if stop_iter == patience:
-                break
+                # Decay but don't stop
+                self.train_op.learning_rate = self.train_op.learning_rate*0.5
+                stop_iter = 0
+                print('No improvement so halving learning rate')
+                self.restore_model()
+
+                if self.train_op.learning_rate < 1.0e-5:
+                    break
 
 
     # Load weights
@@ -348,6 +373,7 @@ class grid_lstm(Model):
         for i in self.input_idx:
 
             data = self.data_list_test[i]
+
             state_len = self.state_len_list[i]
             seq_num_ip = self.resolution_list[i]*self.input_horizon
             seq_num_op = self.resolution_list[i]*self.output_horizon
@@ -417,11 +443,11 @@ class grid_lstm(Model):
             preproc_pipeline = self.prepoc_list[self.output_idx[j]]
 
             temp_data = self.output_data_list_test[j].reshape(snum*self.output_horizon,-1)
-            temp_data = preproc_pipeline.inverse_transform(temp_data)
+            # temp_data = preproc_pipeline.inverse_transform(temp_data)
             self.output_data_list_test[j] = temp_data.reshape(snum,self.output_horizon,-1)
 
             temp_data = self.output_data_list_pred[j].numpy().reshape(snum*self.output_horizon,-1)
-            temp_data = preproc_pipeline.inverse_transform(temp_data)
+            # temp_data = preproc_pipeline.inverse_transform(temp_data)
             self.output_data_list_pred[j] = temp_data.reshape(snum,self.output_horizon,-1)
 
         return self.output_data_list_test, self.output_data_list_pred

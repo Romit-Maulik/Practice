@@ -8,7 +8,7 @@ tf.keras.backend.set_floatx('float32')
 
 
 # Special layer to have more control over LSTM encoder cell
-class LSTM_encoder_layer(tf.keras.layers.Layer):
+class LSTM_grid_layer_v1(tf.keras.layers.Layer):
     def __init__(self, input_dim_list, seq_len_list):
         super(LSTM_encoder_layer, self).__init__()
         self.num_dof = len(input_dim_list)
@@ -126,7 +126,7 @@ class LSTM_encoder_layer(tf.keras.layers.Layer):
 
 
 # Special layer to have more control over LSTM grid cell
-class LSTM_grid_layer(tf.keras.layers.Layer):
+class LSTM_grid_layer_v2(tf.keras.layers.Layer):
     def __init__(self, grid_dim, output_dim_list, seq_len_list):
         super(LSTM_grid_layer, self).__init__()
         self.num_dof = len(output_dim_list)
@@ -321,15 +321,15 @@ class Original_LSTM_grid_layer(tf.keras.layers.Layer):
                 )
 
 
-            self.grid_wu_list = []
-            self.grid_wf_list = []
-            self.grid_wo_list = []
-            self.grid_wc_list = []
+        self.grid_wu_list = []
+        self.grid_wf_list = []
+        self.grid_wo_list = []
+        self.grid_wc_list = []
 
-            self.grid_bu_list = []
-            self.grid_bf_list = []
-            self.grid_bo_list = []
-            self.grid_bc_list = []
+        self.grid_bu_list = []
+        self.grid_bf_list = []
+        self.grid_bo_list = []
+        self.grid_bc_list = []
 
 
         for i in range(self.num_dof):
@@ -391,7 +391,7 @@ class Original_LSTM_grid_layer(tf.keras.layers.Layer):
                 )
 
 
-    # @tf.function
+    @tf.function
     def call(self, inputs_list):
 
         h_list = []
@@ -437,3 +437,23 @@ class Original_LSTM_grid_layer(tf.keras.layers.Layer):
                 h_list[j] = tf.nn.tanh(go*m_list[j])
 
         return h_list, m_list
+
+
+    @tf.function
+    def regularizer_loss(self):
+        regularizer = tf.keras.regularizers.L1(0.01)
+        
+        loss = tf.zeros(shape=(1,), dtype=tf.dtypes.float32, name=None)
+        
+        for i in range(self.num_dof):
+            loss = loss + regularizer(self.wu_list[i]) + regularizer(self.bu_list[i]) + \
+                    regularizer(self.wf_list[i]) + regularizer(self.bf_list[i]) + \
+                    regularizer(self.wo_list[i]) + regularizer(self.bo_list[i]) + \
+                    regularizer(self.wc_list[i]) + regularizer(self.bc_list[i]) + \
+                    regularizer(self.grid_wu_list[i]) + regularizer(self.grid_bu_list[i]) + \
+                    regularizer(self.grid_wf_list[i]) + regularizer(self.grid_bf_list[i]) + \
+                    regularizer(self.grid_wo_list[i]) + regularizer(self.grid_bo_list[i]) + \
+                    regularizer(self.grid_wc_list[i]) + regularizer(self.grid_bc_list[i])
+
+
+        return loss
