@@ -40,12 +40,12 @@ if __name__ == '__main__':
     test_data = [blh_data_test,q250_data_test,q850_data_test,t250_data_test,t850_data_test,
                     tcwv_data_test,u250_data_test,u850_data_test,v250_data_test,v850_data_test]
 
-    import matplotlib.pyplot as plt
-    plt.figure()
-    plt.plot(blh_data[:,0])
-    plt.plot(blh_data_test[:,0])
-    plt.show()
-    exit()
+    # import matplotlib.pyplot as plt
+    # plt.figure()
+    # plt.plot(blh_data[:,0])
+    # plt.plot(blh_data_test[:,0])
+    # plt.show()
+    # exit()
 
     # Forecast parameters
     resolution_list = [1,1,1,1,1,1,1,1,1,1] # the data element shape divided by resolution should be constant

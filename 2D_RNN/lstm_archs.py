@@ -443,11 +443,11 @@ class grid_lstm(Model):
             preproc_pipeline = self.prepoc_list[self.output_idx[j]]
 
             temp_data = self.output_data_list_test[j].reshape(snum*self.output_horizon,-1)
-            # temp_data = preproc_pipeline.inverse_transform(temp_data)
+            temp_data = preproc_pipeline.inverse_transform(temp_data)
             self.output_data_list_test[j] = temp_data.reshape(snum,self.output_horizon,-1)
 
             temp_data = self.output_data_list_pred[j].numpy().reshape(snum*self.output_horizon,-1)
-            # temp_data = preproc_pipeline.inverse_transform(temp_data)
+            temp_data = preproc_pipeline.inverse_transform(temp_data)
             self.output_data_list_pred[j] = temp_data.reshape(snum,self.output_horizon,-1)
 
         return self.output_data_list_test, self.output_data_list_pred
