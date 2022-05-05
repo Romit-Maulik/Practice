@@ -5,7 +5,7 @@ Created on Wed Jun 10 15:07:58 2020
 @author: matth
 """
 
-
+import pdb
 import autograd.numpy as np
 np.random.seed(1)
 from autograd import value_and_grad 
@@ -283,25 +283,24 @@ class KernelFlowsP():
 
         return prediction
 
-def fit_data_anl3(train_data,delay,regu_lambda,noptsteps=100):
+def fit_data_anl3(train_data,in_delay,out_delay,regu_lambda,noptsteps=100):
     lenX=len(train_data[0,:])
     num_modes = train_data.shape[0]
 
     # Some constants
     nparameters=24
-    vdelay=delay*np.ones((num_modes,), dtype=int)
     vregu_lambda=regu_lambda*np.ones((num_modes,))
 
     # Get scaling factor    
     normalize=np.amax(train_data[:,:])
 
     # Prepare training data
-    X=np.zeros((1+lenX-2*delay,delay*num_modes))
-    Y=np.zeros((1+lenX-2*delay,delay*num_modes))
-    for mode in range(train_data.shape[0]):
-        for i in range(1+lenX-2*delay):
-              X[i,(mode*delay):(mode*delay+delay)]=train_data[mode,i:(i+delay)]
-              Y[i,(mode*delay):(mode*delay+delay)]=train_data[mode,(i+delay):(i+2*delay)]
+    X=np.zeros((1+lenX-(in_delay+out_delay),in_delay*num_modes))
+    Y=np.zeros((1+lenX-(in_delay+out_delay),out_delay*num_modes))
+    for i in range(1+lenX-(in_delay+out_delay)):
+        for mode in range(train_data.shape[0]):
+              X[i,(mode*in_delay):(mode*in_delay+in_delay)]=train_data[mode,i:(i+in_delay)]
+              Y[i,(mode*out_delay):(mode*out_delay+out_delay)]=train_data[mode,(i+in_delay):(i+in_delay+out_delay)]
 
     # Normalize
     X=X/normalize
@@ -323,86 +322,67 @@ def fit_data_anl3(train_data,delay,regu_lambda,noptsteps=100):
 
     return k_matrix, A, mu_1, normalize, X
 
-def test_fit_anl3(test_data,train_X,delay,k_matrix,A,param,normalize):
-    lenXt=len(test_data[0,:])
-    num_modes = test_data.shape[0]
-
-    nsteps=lenXt
-    X_test=np.zeros((1,delay*num_modes))
-    X_test[0,:] = test_data[:,:delay].reshape(1,-1)
-    X_test=X_test/normalize
-    
-    arr = np.zeros((nsteps,num_modes))
-    arr[:2*delay,:] = train_data[:,:2*delay].T/normalize
+def test_fit_anl3(test_data,train_X,in_delay,out_delay,k_matrix,A,param,normalize):
 
     kerneltype = "anl3"
     kernel = kernels_dic[kerneltype]
 
-    X_test0=X_test
-    isteps=int(nsteps/delay)+1
-    for i in range(1,isteps):
-        X_test1=X_test0
-        t_matrix = kernel(X_test1, train_X, param) 
-        prediction = np.matmul(t_matrix, A) 
-        
-        # Just using true data
-        X_test0 = (test_data[:,i*delay:(i+1)*delay]/normalize).reshape(1,-1)
+    num_pred = test_data.shape[-1]
+    num_modes = test_data.shape[0]
 
-        # # Feedback
-        # X_test0=prediction
-        
-        for mode in range(num_modes):
-            imin=i*delay
-            imax=np.minimum((i+1)*delay,nsteps)
-            delaymin=imax-imin
-            arr[imin:imax,mode]=np.array(prediction[0,(mode*delay):(mode*delay+delaymin)])
 
-    # Rescale
-    predall=arr*normalize
+    truth_list = []; prediction_list = []
+    for i in range(num_pred-in_delay):
 
-    return predall.T
+        input_data = test_data[:,i:i+in_delay].reshape(1,-1)/normalize
+        t_matrix = kernel(input_data, train_X, param) 
+        prediction = np.matmul(t_matrix, A).reshape(num_modes,-1)*normalize
+        truth = test_data[:,i+in_delay:i+in_delay+out_delay]
+
+        truth_list.append(truth)
+        prediction_list.append(prediction)
+
+    return truth_list, prediction_list
 
 
 
 if __name__ == '__main__':
     from time import time
-    train_data = np.load('../True_Train.npy')
-    test_data = np.load('../True_Test.npy')
+    train_data = np.load('./Total_train_data.npy').T[:5,:1000] # Should be modes x timesteps
+    test_data = np.load('./Total_test_data.npy').T[:5,:400]
 
     # Set delay
-    delay = 8
-    regu_lambda = 15.0
-    noptsteps = 1000
+    in_delay = 42
+    out_delay = 7
+    regu_lambda = 5.0
+    noptsteps = 100
 
     # Fit on training data
     start_time = time()
-    k_matrix, A, param, normalize, train_X = fit_data_anl3(train_data,delay,regu_lambda,noptsteps)
+    k_matrix, A, param, normalize, train_X = fit_data_anl3(train_data,in_delay,out_delay,regu_lambda,noptsteps)
     end_time = time()
 
     print('Time taken for fit:',end_time-start_time)
 
     # Predict and get error on training data
-    predicted_train = test_fit_anl3(train_data, train_X, delay, k_matrix, A, param, normalize)
-
+    true_train, predicted_train = test_fit_anl3(train_data, train_X, in_delay, out_delay, k_matrix, A, param, normalize)
     np.save('RKHS_Train_Prediction.npy',predicted_train)
-    train_error = np.abs(predicted_train-train_data)
-    np.save('RKHS_Train_Error.npy',train_error)
+    
 
     # Predict testing data
-    predicted_test = test_fit_anl3(test_data, train_X, delay, k_matrix, A, param, normalize)
+    true_test, predicted_test = test_fit_anl3(test_data, train_X, in_delay, out_delay, k_matrix, A, param, normalize)
     np.save('RKHS_Test_Prediction.npy',predicted_test)
-    test_error = np.abs(predicted_test-test_data)
-    np.save('RKHS_Test_Error.npy',train_error)
 
-    # Visualize the modal predictions
+    # Visualize the modal predictions for a particular prediction
+    pred_num = 10
     for mode_num in range(3):
         fig, ax = plt.subplots(nrows=1,ncols=2)
-        ax[0].plot(predicted_test[mode_num,:],label='Test predicted')
-        ax[0].plot(test_data[mode_num,:],label='Test true')
+        ax[0].plot(predicted_test[pred_num][mode_num,:],label='Test predicted')
+        ax[0].plot(true_test[pred_num][mode_num,:],label='Test true')
         ax[0].legend()
 
-        ax[1].plot(predicted_train[mode_num,:],label='Train predicted')
-        ax[1].plot(train_data[mode_num,:],label='Train true')
+        ax[1].plot(predicted_train[pred_num][mode_num,:],label='Train predicted')
+        ax[1].plot(true_train[pred_num][mode_num,:],label='Train true')
         ax[1].legend()
         plt.tight_layout()
         plt.show()
