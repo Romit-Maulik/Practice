@@ -354,17 +354,17 @@ def test_fit_anl3(test_data_ip, test_data_op, train_X,in_delay,out_delay,k_matri
 
 if __name__ == '__main__':
 
-    train_data_ip = np.load('./Total_train_data.npy').T[:4,:] # Should be modes x timesteps
-    train_data_op = np.load('./Total_train_data.npy').T[:2,:] # Should be modes x timesteps
+    train_data_ip = np.load('./Total_train_data.npy').T[:5,:] # Should be modes x timesteps
+    train_data_op = np.load('./Total_train_data.npy').T[:3,:] # Should be modes x timesteps
 
-    test_data_ip = np.load('./Total_test_data.npy').T[:4,:]
-    test_data_op = np.load('./Total_test_data.npy').T[:2,:]
+    test_data_ip = np.load('./Total_test_data.npy').T[:5,:]
+    test_data_op = np.load('./Total_test_data.npy').T[:3,:]
 
     # Set delay
-    in_delay = 42
+    in_delay = 7
     out_delay = 7
     regu_lambda = 5.0
-    noptsteps = 5
+    noptsteps = 300
 
     # Fit on training data
     start_time = time()
@@ -374,18 +374,18 @@ if __name__ == '__main__':
     print('Time taken for fit:',end_time-start_time)
 
     # Predict and get error on training data
-    true, predicted = test_fit_anl3(train_data_ip, train_data_op, train_X, in_delay, out_delay, k_matrix, A, param, normalize)
+    true_train, predicted_train = test_fit_anl3(train_data_ip, train_data_op, train_X, in_delay, out_delay, k_matrix, A, param, normalize)
     fname = 'Train_Predictions.pkl'
     with open(fname,'wb') as f:
-        pickle.dump([true,predicted],f)
+        pickle.dump([true_train,predicted_train],f)
     f.close()
     
 
     # Predict testing data
-    true, predicted = test_fit_anl3(test_data_ip, test_data_op, train_X, in_delay, out_delay, k_matrix, A, param, normalize)
+    true_test, predicted_test = test_fit_anl3(test_data_ip, test_data_op, train_X, in_delay, out_delay, k_matrix, A, param, normalize)
     fname = 'Test_Predictions.pkl'
     with open(fname,'wb') as f:
-        pickle.dump([true,predicted],f)
+        pickle.dump([true_test,predicted_test],f)
     f.close()
 
     # Visualize the modal predictions for a particular prediction
