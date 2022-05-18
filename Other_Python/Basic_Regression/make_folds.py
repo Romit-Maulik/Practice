@@ -13,6 +13,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Read csv file make folds')
     parser.add_argument('csv_file', metavar='csv_filename', type=str, help='csv data file path')
     parser.add_argument('num_folds', metavar='num_folds', type=str, help='number of folds')
+    parser.add_argument('train_ratio', metavar='train_ratio', type=float, help='train-test ratio')
     args = parser.parse_args()
 
     # Read data file 
@@ -38,7 +39,7 @@ if __name__ == '__main__':
 
     # Split the data into training and testing sets
     for fold in range(int(args.num_folds)):
-        independent_vars_train, independent_vars_test, dependent_vars_train, dependent_vars_test = train_test_split(independent_vars, dependent_vars.reshape(-1,1), train_size=0.8, random_state=fold)
+        independent_vars_train, independent_vars_test, dependent_vars_train, dependent_vars_test = train_test_split(independent_vars, dependent_vars.reshape(-1,1), train_size=float(args.train_ratio), random_state=fold)
 
         train_data = np.concatenate((independent_vars_train,dependent_vars_train),axis=-1)
         test_data = np.concatenate((independent_vars_test,dependent_vars_test),axis=-1)

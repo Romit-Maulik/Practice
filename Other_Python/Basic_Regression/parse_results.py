@@ -6,6 +6,7 @@ from run_regressors import Regression
 
 parser = argparse.ArgumentParser(description='Parse results for all folds')
 parser.add_argument('num_folds', metavar='num_folds', type=str, help='csv data file path')
+parser.add_argument('num_trees', metavar='num_trees', type=int, help='number of trees')
 args = parser.parse_args()
 
 # Make metrics path
@@ -13,7 +14,7 @@ import os
 if not os.path.exists('metrics/'):
     os.mkdir('metrics/')
 
-reg_class = Regression(None,None,None,run_case=False)
+reg_class = Regression(None,None,None,run_case=False,num_trees=int(args.num_trees))
 key_list = list(reg_class.regressors.keys())
 
 metric_list = ['r2','rho','evs','mae','rmse']

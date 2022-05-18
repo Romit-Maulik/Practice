@@ -26,7 +26,7 @@ class RFR_Class():
 
         self.load_data()
         self.preprocess_data()
-        self.model = ensemble.RandomForestRegressor()
+        self.model = ensemble.RandomForestRegressor(n_estimators=100) # Change this number for different number trees
 
         # Fit model
         self.model.fit(self.train_X_p,self.train_y_p)
@@ -163,6 +163,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Read csv file to run importance assessor')
     parser.add_argument('csv_file', metavar='csv_filename', type=str, help='csv data file path')
     parser.add_argument('num_folds', metavar='num_folds', type=str, help='number of folds')
+    parser.add_argument('num_trees', metavar='num_trees', type=str, help='number of decision trees')
     args = parser.parse_args()
 
     # Read data file 
@@ -206,7 +207,7 @@ if __name__ == '__main__':
 
     # Make SHAP rankings for consistency
     # (same syntax works for LightGBM, CatBoost, scikit-learn and spark models)
-    model = ensemble.RandomForestRegressor()
+    model = ensemble.RandomForestRegressor(n_estimators = int(args.num_trees))
     # Load data
     out_df = csv_df.iloc[:,-1].values.reshape(-1,1)
     inp_df = csv_df.iloc[:,:-1] 

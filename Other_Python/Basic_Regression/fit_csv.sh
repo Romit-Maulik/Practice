@@ -1,6 +1,6 @@
 # 
 if [ "$1" == "-h" ]; then
-	echo ""
+    echo ""
     echo "A bash script to fit multiple csv files and generate metrics/feature decisiveness"
     echo "Note that csv files are assumed to have only one dependent variable (as last column)"
     echo "csv file should also have header with variable names"
@@ -9,7 +9,7 @@ if [ "$1" == "-h" ]; then
     echo "Requires python 3.6.8, tensorflow 1.14, numpy, scikit-learn, xgboost, pandas, matplotlib"
     echo ""
     echo "Usage:"
-    echo "bash fit_csv.sh csvfolder num_folds"
+    echo "bash fit_csv.sh csvfolder num_folds train_ratio num_trees" # Order of arguments
     echo ""
     echo "Returns one folder for each csv file with the following subfolders:"
     echo "1. 'folds/' which has all the training and test fold csv files"
@@ -20,7 +20,7 @@ if [ "$1" == "-h" ]; then
     echo "Author: Romit Maulik"
     exit 0
 else
-    if [ $# -eq 2 ]; then
+    if [ $# -eq 4 ]; then
     	
         # Find the csv files and copy to individual directories
         cd $1
@@ -46,10 +46,10 @@ else
                 mkdir "${folder_name}"
             fi
 
-            python make_folds.py $f $2
-            python run_regressors.py
-            python parse_results.py $2
-            python RFR.py $f $2
+            python make_folds.py $f $2 $3 # $2 is the number of folds and $f is the name of the file
+            python run_regressors.py $4
+            python parse_results.py $2 $4
+            python RFR.py $f $2 $4
 
             mv $f "${folder_name}/"
             mv folds "${folder_name}/"

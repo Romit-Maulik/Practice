@@ -62,7 +62,7 @@ LOG_FLAG = False
 
 class Regression():
 
-    def __init__(self, trainFilename, testFilename, resultsDir, run_case=True):
+    def __init__(self, trainFilename, testFilename, resultsDir, num_trees, run_case=True):
         # assert len(trainFilenames) == len(testFilenames)
         self.resultsDir = resultsDir
         #ntrees = 1000
@@ -77,7 +77,7 @@ class Regression():
             'dt': MultiOutputRegressor(tree.DecisionTreeRegressor()),
             'br': MultiOutputRegressor(ensemble.BaggingRegressor(n_jobs=-1)),
             'etr': MultiOutputRegressor(ensemble.ExtraTreesRegressor(n_jobs=-1)),
-            'rfr': MultiOutputRegressor(ensemble.RandomForestRegressor(n_jobs=-1)),
+            'rfr': MultiOutputRegressor(ensemble.RandomForestRegressor(n_jobs=-1,n_estimators=num_trees)),
             'abr': MultiOutputRegressor(ensemble.AdaBoostRegressor()),
             'gbr': MultiOutputRegressor(ensemble.GradientBoostingRegressor()),
         }
@@ -192,6 +192,14 @@ class Regression():
             res_df.to_csv(outputFilename)
 
 if __name__ == '__main__':
+
+    # Load variable names
+    import argparse
+    parser = argparse.ArgumentParser(description='Arguments for run_regressors')
+    parser.add_argument('num_trees', metavar='num_trees', type=str, help='number of decision trees')
+    args = parser.parse_args()
+
+
     import os
     if not os.path.exists('results/'):
         os.mkdir('results/')
@@ -207,5 +215,5 @@ if __name__ == '__main__':
         testFilename = trainFilename.replace('train', 'test')
         testFilenames.append(testFilename)
 
-        Regression(trainFilename, testFilename, resultsDir)
+        Regression(trainFilename, testFilename, resultsDir, int(args.num_trees))
 
