@@ -16,7 +16,7 @@ def initialize(array):  # Initializes in fourier domain
     xlength_new = dx1 * float(nx_new)
 
     kx = np.array([(2 * pi) * i / xlength_new for i in
-                   range(0, nx_new / 2) + [0] + range(-nx_new / 2 + 1, 0)])  # Note no im heref
+                   list(range(0, nx_new // 2)) + [0] + list(range(-nx_new // 2 + 1, 0))])  # Note no im heref
     acons = 2.0 / (10.0 ** (5.0)) / (3.0 * (pi ** (0.5)))
 
     array_hat = np.zeros(nx_new, dtype=np.complex)  # The array is of type complex
@@ -30,7 +30,7 @@ def initialize(array):  # Initializes in fourier domain
     phase[nx_new + 1] = 0.0
 
     k = 3
-    for i in range(1, nx_new / 2):
+    for i in range(1, nx_new // 2):
         rand = np.random.uniform(0.0, 1.0)
         phase[k - 1] = np.cos(2.0 * pi * rand)
         phase[k] = np.sin(2.0 * pi * rand)
@@ -62,8 +62,8 @@ def spectra_calculation(array_hat):
     # Energy Spectrum
     espec = 0.5 * np.absolute(array_new)**2
     # Angle Averaging
-    eplot = np.zeros(nx / 2, dtype='double')
-    for i in range(1, nx / 2):
+    eplot = np.zeros(nx // 2, dtype='double')
+    for i in range(1, nx // 2):
         eplot[i] = 0.5 * (espec[i] + espec[nx - i])
 
     return eplot
@@ -73,17 +73,17 @@ def rkcn_spectral_1D(array_hat, time):
     global alpha, nx, num_op, xlength
     pi = np.pi
 
-    kx_linear = np.array([(2 * pi) * i / xlength for i in range(0, nx / 2) + [0] + range(-nx / 2 + 1, 0)])
-    kx_nonlinear = np.array([(2 * pi) * i / xlength for i in range(0, nx / 2) + [0] + range(-nx / 2 + 1, 0)])
+    kx_linear = np.array([(2 * pi) * i / xlength for i in list(range(0, nx // 2)) + [0] + list(range(-nx // 2 + 1, 0))])
+    kx_nonlinear = np.array([(2 * pi) * i / xlength for i in list(range(0, nx // 2)) + [0] + list(range(-nx // 2 + 1, 0))])
     k2 = kx_linear ** 2
     # Two Third Rule for nonlinear term
-    ll = (nx / 2) - 1 / 6 * nx
-    ul = (nx / 2) + 1 / 6 * nx
+    ll = ((nx // 2) - 1) // 6 * nx
+    ul = ((nx // 2) + 1) // 6 * nx
     for i in range(ll, ul):
         kx_nonlinear[i] = 0.0
 
     h = xlength / nx
-    x = [h * i for i in xrange(1, nx + 1)]
+    x = [h * i for i in range(1, nx + 1)]
 
     array_hat_0 = array_hat
 
@@ -131,7 +131,7 @@ def rkcn_spectral_1D(array_hat, time):
 
             # Plotting spectra
             plt.figure(2)
-            kx_plot = np.array([float(i) for i in range(0, nx / 2)])
+            kx_plot = np.array([float(i) for i in range(0, nx // 2)])
             spec = spectra_calculation(array_hat_0)
             plt.plot(kx_plot, spec, label='Time '+str(t))
             del kx_plot
@@ -169,7 +169,7 @@ if __name__ == "__main__":
 
     # Plotting initial fields
     h = xlength / nx
-    x = [h * i for i in xrange(1, nx + 1)]
+    x = [h * i for i in range(1, nx + 1)]
     plt.figure()
     plt.plot(x, np.real(np.fft.ifft(u)))
     plt.title('Initial conditions')
