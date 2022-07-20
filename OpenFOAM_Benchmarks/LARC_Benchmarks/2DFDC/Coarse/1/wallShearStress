@@ -1,0 +1,56 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  2206                                  |
+|   \\  /    A nd           | Website:  www.openfoam.com                      |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    arch        "LSB;label=32;scalar=64";
+    class       volVectorField;
+    location    "1";
+    object      wallShearStress;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+dimensions      [0 2 -2 0 0 0 0];
+
+internalField   uniform (0 0 0);
+
+boundaryField
+{
+    frontAndBack
+    {
+        type            empty;
+    }
+    frontAndBack
+    {
+        type            empty;
+    }
+    inlet
+    {
+        type            calculated;
+        value           uniform (0 0 0);
+    }
+    outlet
+    {
+        type            calculated;
+        value           uniform (0 0 0);
+    }
+    bottom
+    {
+        type            calculated;
+        value           nonuniform List<vector> 10((-0.31004183 0 -7.9991365e-09) (-0.31000297 0 -1.7754939e-13) (-0.30999837 0 -2.5810642e-14) (-0.30999665 0 -1.0554682e-14) (-0.30999579 0 -5.6106331e-15) (-0.30999528 0 -3.4296547e-15) (-0.30999495 0 -2.2776976e-15) (-0.30999472 0 -5.0946991e-15) (-0.30999359 0 -1.1324744e-14) (-0.3099901 0 -7.1280792e-15));
+    }
+    top
+    {
+        type            calculated;
+        value           nonuniform List<vector> 10((-0.31003663 0 7.9991537e-09) (-0.30999777 0 1.7753655e-13) (-0.30999317 0 2.581934e-14) (-0.30999145 0 1.0562444e-14) (-0.30999059 0 5.6100863e-15) (-0.30999008 0 3.4221191e-15) (-0.30998975 0 2.2684551e-15) (-0.30998952 0 5.1019585e-15) (-0.30998839 0 1.1310322e-14) (-0.3099849 0 7.1318241e-15));
+    }
+}
+
+
+// ************************************************************************* //
