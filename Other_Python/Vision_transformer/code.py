@@ -42,9 +42,35 @@ class VisionTransformer(nn.Module):
 
 
 import torch.optim as optim
-from torchvision.datasets import CIFAR10
 from torchvision.transforms import ToTensor, Normalize
-from torch.utils.data import DataLoader
+from torch.utils.data import Dataset, DataLoader
+import numpy as np
+
+# Custom dataset class
+class MyDataset(Dataset):
+    def __init__(self, input_data, output_data):
+        self.input_data = torch.from_numpy(input_data).float()
+        self.output_data = torch.from_numpy(output_data).float()
+        
+    def __len__(self):
+        return len(self.input_data)
+    
+    def __getitem__(self, index):
+        input_sample = self.input_data[index]
+        output_sample = self.output_data[index]
+        return input_sample, output_sample
+
+# Example input and output numpy arrays
+input_array = np.random.randn(1000, 3, 32, 32)
+output_array = np.random.randn(1000, 3, 32, 32)
+
+# Instantiate the custom dataset
+dataset = MyDataset(input_array, output_array)
+
+# Create a DataLoader
+batch_size = 32
+shuffle = True
+dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=shuffle)
 
 # Define hyperparameters
 image_size = 32
@@ -57,10 +83,6 @@ learning_rate = 0.001
 batch_size = 32
 num_epochs = 10
 
-# Load CIFAR10 dataset
-train_dataset = CIFAR10(root="./data", train=True, download=True, transform=ToTensor())
-train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
-
 # Initialize model and optimizer
 model = VisionTransformer(image_size=image_size, patch_size=patch_size, channel_size=3, hidden_dim=hidden_dim, 
                           num_layers=num_layers, num_heads=num_heads, output_size=output_size)
@@ -68,7 +90,7 @@ optimizer = optim.Adam(model.parameters(), lr=learning_rate)
 
 # Train model
 for epoch in range(num_epochs):
-    for batch_idx, (data, target) in enumerate(train_loader):
+    for batch_idx, (data, target) in enumerate(dataloader):
         optimizer.zero_grad()
         output = model(data)
 
